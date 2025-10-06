@@ -1,37 +1,20 @@
 # MMSports — Project Site (v1.2)
 
-Repositorio con landing y subproyectos bajo `/WebSites`, listo para **GitHub Pages** con **Actions**.
+Repositorio listo para **GitHub Pages (Project Site)** con despliegue vía **GitHub Actions**.
 
-## Contenido
-- `index.html` — portada del repo.
-- `WebSites/` — landing interna y subapps:
-  - `WebSites/TennisSimulator/` (v2: logístico + Monte Carlo, odds, IC95%)
-  - `WebSites/NFLSimulator/` (placeholder; integra tu versión con `tools/`)
-- `assets/site.js` y `assets/site.css` — navbar + footer globales (v1.2.0).
-- `.github/workflows/pages.yml` — workflow de despliegue.
+## Estructura
+- `index.html` — portada.
+- `WebSites/` — landing y subapps:
+  - `WebSites/TennisSimulator/` (v2 completa)
+  - `WebSites/NFLSimulator/` (placeholder; usa `tools/` para integrar tu versión real)
+- `assets/site.js` y `assets/site.css` — navbar y footer globales.
+- `.github/workflows/pages.yml` — workflow recomendado (incluye `configure-pages`).
 - `.nojekyll`
-- `tools/` — scripts para integrar **NFLSimulator** desde repo o carpeta local `NFL`.
+- `tools/` — scripts para integrar NFLSimulator desde repo o carpeta local.
 
-## Publicación (Project Site)
-1) Crea el repo **MMSports** en tu cuenta GitHub.
-2) Copia estos archivos en la **raíz** del repo y haz push a `main`:
-   ```bash
-   git init
-   git add .
-   git commit -m "MMSports v1.2 — inicial"
-   git branch -M main
-   git remote add origin https://github.com/<TU_USUARIO>/MMSports.git
-   git push -u origin main
-   ```
-3) En **Settings → Pages**, elige **GitHub Actions** como fuente.
-4) Tu sitio quedará en: `https://<TU_USUARIO>.github.io/MMSports/`
-
-## Integrar tu NFLSimulator
-- **Remoto**: `NFL_REPO_URL=https://github.com/<TU_USUARIO>/NFLSimulator.git ./tools/sync_nfslimulator.sh /ruta/a/MMSports`
-- **Local** (proyecto `NFL`): `./tools/sync_nfslimulator.sh /ruta/a/MMSports --use-local /ruta/a/NFL`
-
-Los scripts:
-- Copian contenidos a `WebSites/NFLSimulator/`
-- Promueven `dist/`, `build/` o `public/` si corresponde
-- Inyectan navbar/footer y ajustan la ruta a `../../assets/site.js`
+## Publicación
+1) Crea el repo **MMSports** en GitHub.
+2) Sube estos archivos en la **raíz** del repo (rama `main`).
+3) En **Settings → Pages**, selecciona **Source = GitHub Actions**.
+4) Verás la URL final en el job **Deploy to GitHub Pages** (debe ser: `https://amante.github.io/MMSports/`).
 

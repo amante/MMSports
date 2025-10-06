@@ -9,7 +9,7 @@
   <style>
     .card { transition: box-shadow .2s ease, transform .2s ease; }
     .card:hover { box-shadow: 0 10px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
-    .mono { font-feature-settings: "ss01" on, "ss02" on; }
+    .mono { font-feature-settings: 'ss01' on, 'ss02' on; }
     .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .number-input { -moz-appearance: textfield; }
   </style>
@@ -19,7 +19,7 @@
   <header class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">TennisSimulator</h1>
-      <div class="text-sm text-slate-500">v2.0 • 2025‑10‑06</div>
+      <div class="text-sm text-slate-500">v2.0</div>
     </div>
     <p class="mt-2 text-slate-600">
       Modelo <span class="font-semibold">logístico</span> + <span class="font-semibold">simulación Monte Carlo por sets</span>, con conversión a <span class="italic">odds</span>
@@ -129,7 +129,7 @@
       </div>
     </section>
 
-    <details class="card bg-white rounded-2xl shadow-sm p-5 md:p-6 mb-6 open:animate-[fadeIn_.2s_ease]">
+    <details class="card bg-white rounded-2xl shadow-sm p-5 md:p-6 mb-6">
       <summary class="cursor-pointer text-lg font-semibold mb-2">Ajustes (modelo & simulación)</summary>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mt-3">
         <div>
@@ -304,24 +304,44 @@
     function toDecimalOdds(p){ if(p<=0) return '∞'; return (1/p).toFixed(2); }
     function toAmericanOdds(p){ if(p<=0||p>=1) return '—'; if(p>0.5){ const val=Math.round(100*p/(1-p)); return '-'+val; } else { const val=Math.round(100*(1-p)/p); return '+'+val; } }
 
-    function render(A,B,pLogit,feats,weights,mcRes){
-      const $ = (id) => document.getElementById(id);
-      $("labelA").textContent=A.name||'Jugador A'; $("labelB").textContent=B.name||'Jugador B';
+    function render(A,B,pLogit,feats,weights,mcRes){ /* (intentionally unused) */ }
+
+    function calculate(){
+      const A=getPlayerInput('A'), B=getPlayerInput('B');
+      const h2hA=parseFloat(document.getElementById("h2hA").value||0);
+      const h2hB=parseFloat(document.getElementById("h2hB").value||0);
+      const weights=computeWeights();
+      const format=document.getElementById("format").value;
+      const mcRuns=parseFloat(document.getElementById("mcRuns").value||5000);
+      const firstServe=document.getElementById("firstServe").value;
+
+      const feats=computeFeatures(A,B,h2hA,h2hB);
+      const { pA: pLogit }=combineToProbability(feats,weights, format==='bo5');
+      const pHoldA=A.hold/100, pHoldB=B.hold/100;
+      const mcRes=runMonteCarlo(format,pHoldA,pHoldB,firstServe,mcRuns);
+
+      // UI
+      const fmt=(p)=> (Math.round(p*1000)/10)+'%';
+      document.getElementById("labelA").textContent=A.name||'Jugador A';
+      document.getElementById("labelB").textContent=B.name||'Jugador B';
       const pA_final= mcRes?mcRes.pA:pLogit; const pB_final=1-pA_final;
-      $("pA").textContent=fmtPct(pA_final); $("pB").textContent=fmtPct(pB_final);
+      document.getElementById("pA").textContent=fmt(pA_final);
+      document.getElementById("pB").textContent=fmt(pB_final);
       document.getElementById("barA").style.width=(pA_final*100)+'%';
       document.getElementById("barB").style.width=(pB_final*100)+'%';
-      $("pA_logit").textContent=fmtPct(pLogit); $("pB_logit").textContent=fmtPct(1-pLogit);
-      if(mcRes){ $("pA_mc").textContent=fmtPct(mcRes.pA); $("pB_mc").textContent=fmtPct(1-mcRes.pA);
-        $("pA_ci").textContent=` (IC95% ${fmtPct(mcRes.ci[0])}–${fmtPct(mcRes.ci[1])}, n=${mcRes.runs})`;
-        $("pB_ci").textContent=` (IC95% ${fmtPct(1-mcRes.ci[1])}–${fmtPct(1-mcRes.ci[0])}, n=${mcRes.runs})`; }
-      else { $("pA_mc").textContent='—'; $("pB_mc").textContent='—'; $("pA_ci").textContent=''; $("pB_ci").textContent=''; }
+      document.getElementById("pA_logit").textContent=fmt(pLogit);
+      document.getElementById("pB_logit").textContent=fmt(1-pLogit);
+      if(mcRes){ document.getElementById("pA_mc").textContent=fmt(mcRes.pA); document.getElementById("pB_mc").textContent=fmt(1-mcRes.pA);
+        document.getElementById("pA_ci").textContent=` (IC95% ${fmt(mcRes.ci[0])}–${fmt(mcRes.ci[1])}, n=${mcRes.runs})`;
+        document.getElementById("pB_ci").textContent=` (IC95% ${fmt(1-mcRes.ci[1])}–${fmt(1-mcRes.ci[0])}, n=${mcRes.runs})`; }
+      else { document.getElementById("pA_mc").textContent='—'; document.getElementById("pB_mc").textContent='—'; document.getElementById("pA_ci").textContent=''; document.getElementById("pB_ci").textContent=''; }
       document.getElementById("oddsALabel").textContent=A.name||'Jugador A';
       document.getElementById("oddsBLabel").textContent=B.name||'Jugador B';
-      document.getElementById("oddsA_dec").textContent=toDecimalOdds(pA_final);
-      document.getElementById("oddsB_dec").textContent=toDecimalOdds(pB_final);
-      document.getElementById("oddsA_amer").textContent=toAmericanOdds(pA_final);
-      document.getElementById("oddsB_amer").textContent=toAmericanOdds(pB_final);
+      const toDec=(p)=> p<=0 ? '∞' : (1/p).toFixed(2); const toAmer=(p)=> p<=0||p>=1 ? '—' : (p>0.5?('-'+Math.round(100*p/(1-p))):('+'+Math.round(100*(1-p)/p)));
+      document.getElementById("oddsA_dec").textContent=toDec(pA_final);
+      document.getElementById("oddsB_dec").textContent=toDec(pB_final);
+      document.getElementById("oddsA_amer").textContent=toAmer(pA_final);
+      document.getElementById("oddsB_amer").textContent=toAmer(pB_final);
       const list=document.getElementById("contrib"); list.innerHTML='';
       const items=[
         {label:'Elo/Ranking', val: weights.wElo*feats.fElo},
@@ -339,116 +359,15 @@
           </div>`;
         list.appendChild(li);
       }
-    }
-
-    function computeConfidence(A,B){
-      let parts=0;
-      if(Number.isFinite(A.elo)||Number.isFinite(A.rank)) parts++;
-      if(Number.isFinite(B.elo)||Number.isFinite(B.rank)) parts++;
-      if(A.formWins!==null && B.formWins!==null) parts++;
-      if(A.surfWins!==null && B.surfWins!==null) parts++;
-      if(A.hold!==null && A.brk!==null && B.hold!==null && B.brk!==null) parts++;
-      const conf=Math.max(0, Math.min(100, Math.round((parts/5)*100 - ((!Number.isFinite(A.elo)||!Number.isFinite(B.elo))?8:0))));
-      return conf;
-    }
-
-    function exportJSON(){
-      const state={
-        surface: document.getElementById("surface").value,
-        format: document.getElementById("format").value,
-        h2hA: parseFloat(document.getElementById("h2hA").value||0),
-        h2hB: parseFloat(document.getElementById("h2hB").value||0),
-        playerA:{ name: document.getElementById("nameA").value, rank: parseFloat(document.getElementById("rankA").value), elo: parseFloat(document.getElementById("eloA").value),
-          formWins: parseFloat(document.getElementById("formWinsA").value||5), surfWins: parseFloat(document.getElementById("surfWinsA").value||5),
-          hold: parseFloat(document.getElementById("holdA").value||80), brk: parseFloat(document.getElementById("breakA").value||25) },
-        playerB:{ name: document.getElementById("nameB").value, rank: parseFloat(document.getElementById("rankB").value), elo: parseFloat(document.getElementById("eloB").value),
-          formWins: parseFloat(document.getElementById("formWinsB").value||5), surfWins: parseFloat(document.getElementById("surfWinsB").value||5),
-          hold: parseFloat(document.getElementById("holdB").value||80), brk: parseFloat(document.getElementById("breakB").value||25) },
-        weights: { wElo: parseFloat(document.getElementById("wElo").value||1), wSurf: parseFloat(document.getElementById("wSurf").value||0.8), wForm: parseFloat(document.getElementById("wForm").value||0.6), wH2H: parseFloat(document.getElementById("wH2H").value||0.4), wSR: parseFloat(document.getElementById("wSR").value||0.8), k: parseFloat(document.getElementById("kScale").value||1) },
-        mc: { runs: parseFloat(document.getElementById("mcRuns").value||5000), firstServe: document.getElementById("firstServe").value },
-        version: 'v2.0', savedAt: new Date().toISOString(),
-      };
-      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `tennis_model_${Date.now()}.json`; a.click(); URL.revokeObjectURL(a.href);
-    }
-
-    function importJSON(file){
-      const reader=new FileReader();
-      reader.onload=(e)=>{ try{ const data=JSON.parse(e.target.result);
-        if(data.surface) document.getElementById("surface").value=data.surface;
-        if(data.format) document.getElementById("format").value=data.format;
-        const set=(id,v)=>{ const el=document.getElementById(id); if(typeof v!=='undefined' && v!==null && !Number.isNaN(v)) el.value=v; };
-        set("h2hA",data.h2hA); set("h2hB",data.h2hB);
-        const A=data.playerA||{}, B=data.playerB||{}, W=data.weights||{}, MC=data.mc||{};
-        set("nameA",A.name); set("rankA",A.rank); set("eloA",A.elo); set("formWinsA",A.formWins); set("surfWinsA",A.surfWins); set("holdA",A.hold); set("breakA",A.brk);
-        set("nameB",B.name); set("rankB",B.rank); set("eloB",B.elo); set("formWinsB",B.formWins); set("surfWinsB",B.surfWins); set("holdB",B.hold); set("breakB",B.brk);
-        set("wElo",W.wElo); set("wSurf",W.wSurf); set("wForm",W.wForm); set("wH2H",W.wH2H); set("wSR",W.wSR); set("kScale",W.k);
-        set("mcRuns",MC.runs); if(MC.firstServe) document.getElementById("firstServe").value=MC.firstServe;
-      }catch(_){ alert('Archivo JSON inválido'); } };
-      reader.readAsText(file);
-    }
-
-    function readAllInputs(){
-      const A=getPlayerInput('A'), B=getPlayerInput('B');
-      const h2hA=parseFloat(document.getElementById("h2hA").value||0);
-      const h2hB=parseFloat(document.getElementById("h2hB").value||0);
-      const weights=computeWeights();
-      const format=document.getElementById("format").value;
-      const mcRuns=parseFloat(document.getElementById("mcRuns").value||5000);
-      const firstServe=document.getElementById("firstServe").value;
-      return {A,B,h2hA,h2hB,weights,format,mcRuns,firstServe};
-    }
-    function validateInputs(A,B){
-      const errs=[];
-      for(const [lbl,v] of [["A hold%",A.hold],["A break%",A.brk],["B hold%",B.hold],["B break%",B.brk]]){ if(!Number.isFinite(v)||v<0||v>100) errs.push(`${lbl} debe estar en 0–100`); }
-      for(const [lbl,v] of [["A forma",A.formWins],["B forma",B.formWins],["A superficie",A.surfWins],["B superficie",B.surfWins]]){ if(!Number.isFinite(v)||v<0||v>10) errs.push(`${lbl} (victorias) debe estar en 0–10`); }
-      return errs;
-    }
-    function render(A,B,pLogit,feats,weights,mcRes){ /* already defined above */ }
-
-    function calculate(){
-      const {A,B,h2hA,h2hB,weights,format,mcRuns,firstServe}=readAllInputs();
-      const errs=validateInputs(A,B); if(errs.length){ alert('Corrige los siguientes errores:\n\n'+errs.join('\n')); return; }
-      const feats=computeFeatures(A,B,h2hA,h2hB);
-      const { pA: pLogit }=combineToProbability(feats,weights, format==='bo5');
-      const pHoldA=A.hold/100, pHoldB=B.hold/100;
-      const mcRes=runMonteCarlo(format,pHoldA,pHoldB,firstServe,mcRuns);
-      // update UI
-      document.getElementById("confidence").textContent = computeConfidence(A,B) + '%';
-      // create labels expected by render
-      window.document.getElementById("labelA").textContent = A.name||'Jugador A';
-      window.document.getElementById("labelB").textContent = B.name||'Jugador B';
-      // render (function defined earlier)
-      (function(){const $=(id)=>document.getElementById(id);
-        const pA_final= mcRes?mcRes.pA:pLogit; const pB_final=1-pA_final;
-        $("pA").textContent=fmtPct(pA_final); $("pB").textContent=fmtPct(pB_final);
-        document.getElementById("barA").style.width=(pA_final*100)+'%'; document.getElementById("barB").style.width=(pB_final*100)+'%';
-        $("pA_logit").textContent=fmtPct(pLogit); $("pB_logit").textContent=fmtPct(1-pLogit);
-        if(mcRes){ $("pA_mc").textContent=fmtPct(mcRes.pA); $("pB_mc").textContent=fmtPct(1-mcRes.pA);
-          $("pA_ci").textContent=` (IC95% ${fmtPct(mcRes.ci[0])}–${fmtPct(mcRes.ci[1])}, n=${mcRes.runs})`;
-          $("pB_ci").textContent=` (IC95% ${fmtPct(1-mcRes.ci[1])}–${fmtPct(1-mcRes.ci[0])}, n=${mcRes.runs})`; }
-        else { $("pA_mc").textContent='—'; $("pB_mc").textContent='—'; $("pA_ci").textContent=''; $("pB_ci").textContent=''; }
-        $("oddsALabel").textContent=A.name||'Jugador A'; $("oddsBLabel").textContent=B.name||'Jugador B';
-        const toDec=(p)=> p<=0 ? '∞' : (1/p).toFixed(2); const toAmer=(p)=> p<=0||p>=1 ? '—' : (p>0.5?('-'+Math.round(100*p/(1-p))):('+'+Math.round(100*(1-p)/p)));
-        $("oddsA_dec").textContent=toDec(pA_final); $("oddsB_dec").textContent=toDec(pB_final);
-        $("oddsA_amer").textContent=toAmer(pA_final); $("oddsB_amer").textContent=toAmer(pB_final);
-        const list=$("contrib"); list.innerHTML=''; const items=[
-          {label:'Elo/Ranking', val: weights.wElo*feats.fElo},
-          {label:'Superficie',  val: weights.wSurf*feats.fSurf},
-          {label:'Forma',       val: weights.wForm*feats.fForm},
-          {label:'Head‑to‑Head',val: weights.wH2H*feats.fH2H},
-          {label:'Saque+Resto', val: weights.wSR*feats.fSR},
-        ];
-        for(const it of items){
-          const sign= it.val>=0?'+':'−'; const mag=Math.abs(it.val); const pct=Math.max(0, Math.min(100, Math.round((mag/3)*100)));
-          const li=document.createElement('li');
-          li.innerHTML=`<div class="flex items-center justify-between"><div>${it.label}</div><div class="mono tabular-nums">${sign}${mag.toFixed(2)}</div></div>
-            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
-              <div class="h-2 ${it.val>=0?'bg-indigo-600':'bg-slate-900'}" style="width:${pct}%"></div>
-            </div>`;
-          list.appendChild(li);
-        }
-        $("oddsALabel").textContent=A.name||'Jugador A'; $("oddsBLabel").textContent=B.name||'Jugador B';
+      document.getElementById("confidence").textContent = (function(){
+        let parts=0;
+        if(Number.isFinite(A.elo)||Number.isFinite(A.rank)) parts++;
+        if(Number.isFinite(B.elo)||Number.isFinite(B.rank)) parts++;
+        if(A.formWins!==null && B.formWins!==null) parts++;
+        if(A.surfWins!==null && B.surfWins!==null) parts++;
+        if(A.hold!==null && A.brk!==null && B.hold!==null && B.brk!==null) parts++;
+        const conf=Math.max(0, Math.min(100, Math.round((parts/5)*100 - ((!Number.isFinite(A.elo)||!Number.isFinite(B.elo))?8:0))));
+        return conf + '%';
       })();
     }
 
@@ -472,10 +391,28 @@
     document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='enter'){ calculate(); }});
     document.getElementById("calcBtn").addEventListener('click', calculate);
     document.getElementById("resetBtn").addEventListener('click', resetAll);
-    document.getElementById("exportBtn").addEventListener('click', exportJSON);
-    document.getElementById("importFile").addEventListener('change',(e)=>{ if(e.target.files&&e.target.files[0]) importJSON(e.target.files[0]); });
-
+    document.getElementById("exportBtn").addEventListener('click', ()=>{
+      const state={
+        surface: document.getElementById("surface").value,
+        format: document.getElementById("format").value,
+        h2hA: parseFloat(document.getElementById("h2hA").value||0),
+        h2hB: parseFloat(document.getElementById("h2hB").value||0),
+      };
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `tennis_model_${Date.now()}.json`; a.click(); URL.revokeObjectURL(a.href);
+    });
+    document.getElementById("importFile").addEventListener('change',(e)=>{ if(e.target.files&&e.target.files[0]) {
+      const reader=new FileReader(); reader.onload=(ev)=>{ try{
+        const data=JSON.parse(ev.target.result);
+        if(data.surface) document.getElementById("surface").value=data.surface;
+        if(data.format) document.getElementById("format").value=data.format;
+        if(typeof data.h2hA!=='undefined') document.getElementById("h2hA").value=data.h2hA;
+        if(typeof data.h2hB!=='undefined') document.getElementById("h2hB").value=data.h2hB;
+      }catch(_){ alert('Archivo JSON inválido'); } }; reader.readAsText(e.target.files[0]); }});
     calculate();
   </script>
+  <script src="../../assets/site.js"></script>
+  <script>window.Site && window.Site.auto();</script>
+  <div id="site-footer"></div>
 </body>
 </html>
