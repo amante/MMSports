@@ -6,21 +6,17 @@
   <title>MMSports — Proyectos</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="description" content="Landing de proyectos del repositorio MMSports." />
-  <style>
-    .card { transition: box-shadow .2s ease, transform .2s ease; }
-    .card:hover { box-shadow: 0 10px 24px rgba(0,0,0,.08); transform: translateY(-2px); }
-  </style>
+  <style>.card{transition:box-shadow .2s ease, transform .2s ease}.card:hover{box-shadow:0 10px 24px rgba(0,0,0,.08);transform:translateY(-2px)}</style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="site-navbar"></div>
   <header class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">MMSports — Proyectos</h1>
-      <div class="text-sm text-slate-500">Project Site • v1.2</div>
+      <div class="text-sm text-slate-500">Project Site • v1.4</div>
     </div>
     <p class="mt-2 text-slate-600">Portada del repositorio con enlaces a simuladores deportivos.</p>
   </header>
-
   <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
     <section>
       <h2 class="text-lg font-semibold mb-4">Apps</h2>
@@ -28,7 +24,7 @@
         <a class="card block bg-white rounded-2xl p-5 border border-slate-200 no-underline" href="./WebSites/TennisSimulator/">
           <div class="text-3xl mb-2">🎾</div>
           <div class="font-semibold">TennisSimulator (v2)</div>
-          <p class="text-sm text-slate-600 mt-1">Modelo logístico + Monte Carlo por sets, odds e IC95%.</p>
+          <p class="text-sm text-slate-600 mt-1">+ Fav surface en modelo y simulación.</p>
         </a>
         <a class="card block bg-white rounded-2xl p-5 border border-slate-200 no-underline" href="./WebSites/NFLSimulator/">
           <div class="text-3xl mb-2">🏈</div>
@@ -38,7 +34,6 @@
       </div>
     </section>
   </main>
-
   <div id="site-footer"></div>
   <script src="./assets/site.js"></script>
   <script>window.Site && window.Site.auto();</script>

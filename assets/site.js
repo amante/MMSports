@@ -1,8 +1,7 @@
-/* Global navbar + footer injector — v1.2 */
+/* Global navbar + footer injector — v1.4 */
 window.Site = (function () {
-  const VERSION = "1.2.0";
+  const VERSION = "1.4.0";
   const REPO_NAME = "MMSports";
-
   function el(tag, attrs = {}, children = []) {
     const e = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -16,8 +15,7 @@ window.Site = (function () {
     }
     return e;
   }
-
-  function defaultItems(originBase) {
+  function defaultItems() {
     function repoBase() {
       try {
         const parts = window.location.pathname.split('/').filter(Boolean);
@@ -34,28 +32,18 @@ window.Site = (function () {
       { label: "NFLSimulator", href: base + "WebSites/NFLSimulator/" }
     ];
   }
-
-  function currentPath() {
-    return window.location.pathname.replace(/\/+$/, "") + "/";
-  }
-
+  function currentPath() { return window.location.pathname.replace(/\/+$/, "") + "/"; }
   function renderNavbar(targetId = "site-navbar", items) {
     const target = document.getElementById(targetId);
     if (!target) return;
-    const originBase = window.location.origin;
-
-    const navItems = items && items.length ? items : defaultItems(originBase);
+    const navItems = items && items.length ? items : defaultItems();
     const here = currentPath();
-
     const nav = el("nav", { class: "w-full bg-white/80 backdrop-blur border-b border-slate-200" }, [
       el("div", { class: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between" }, [
         el("div", { class: "font-semibold" }, "MMSports — Proyectos"),
         el("ul", { class: "flex items-center gap-3 text-sm" },
           navItems.map(it => {
-            const a = el("a", {
-              href: it.href,
-              class: "px-3 py-1.5 rounded-lg hover:bg-slate-100"
-            }, it.label);
+            const a = el("a", { href: it.href, class: "px-3 py-1.5 rounded-lg hover:bg-slate-100" }, it.label);
             try {
               const u = new URL(it.href, window.location.origin);
               const path = u.pathname.replace(/\/+$/, "") + "/";
@@ -69,7 +57,6 @@ window.Site = (function () {
     target.innerHTML = "";
     target.appendChild(nav);
   }
-
   function renderFooter(targetId = "site-footer") {
     const target = document.getElementById(targetId);
     if (!target) return;
@@ -82,11 +69,6 @@ window.Site = (function () {
     target.innerHTML = "";
     target.appendChild(ft);
   }
-
-  function auto() {
-    renderNavbar();
-    renderFooter();
-  }
-
+  function auto() { renderNavbar(); renderFooter(); }
   return { version: VERSION, renderNavbar, renderFooter, auto };
 })();
