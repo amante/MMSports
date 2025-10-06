@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SportsBets — Importar y validar líneas</title>
+  <title>SportsBets — Columna A (“apuesta”)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <meta name="description" content="Importa Excel/CSV con líneas: Ganador, Odd, Tipo, Equipos; infiere deporte y valida que Winner pertenezca a los equipos." />
+  <meta name="description" content="Lee Excel donde la columna A se llama 'apuesta' y contiene toda la línea; filas 2..N son datos." />
   <style>
     .card{transition:box-shadow .2s ease, transform .2s ease}
     .card:hover{box-shadow:0 10px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
@@ -14,19 +14,17 @@
     table{border-collapse: separate; border-spacing: 0; min-width: 100%}
     th, td{border-bottom:1px solid #e5e7eb; padding:6px 10px; text-align:left; font-size:12px}
     th{position: sticky; top:0; background:#f8fafc; z-index:1}
-    .bad{background:#fff7ed} /* amber-50 */
-    .good{background:#f0fdf4} /* emerald-50 */
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace}
+    .bad{background:#fff7ed} .good{background:#f0fdf4}
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="site-navbar"></div>
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Validación</h1>
-      <div class="text-sm text-slate-500">v1.7</div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Columna A</h1>
+      <div class="text-sm text-slate-500">v1.8</div>
     </div>
-    <p class="mt-2 text-slate-600">Mapa tus columnas (Ganador, Odd, Tipo, Equipos). Inferimos el <span class="font-semibold">deporte</span> por <span class="font-mono">Tipo</span> y validamos que el <span class="font-semibold">Ganador</span> pertenezca a los equipos (o sea <em>Empate</em> en fútbol).</p>
+    <p class="mt-2 text-slate-600">Formato esperado: <span class="font-mono">A1 = "apuesta"</span>; desde <span class="font-mono">A2</span> en adelante, cada celda contiene una línea con: <em>Ganador, Odd, Tipo, Equipos</em>. Podemos detectar los campos con etiquetas (p. ej., <em>Ganador: X | Odd: 1.85 | Tipo: Ganador | Equipos: A vs B</em>) o heurísticas.</p>
 
     <section class="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
       <div class="lg:col-span-2 space-y-6">
@@ -42,7 +40,6 @@
           </div>
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label class="block text-sm font-medium mb-1">Hoja</label><select id="sheetSel" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-sm font-medium mb-1">Fila de encabezados</label><input id="headerRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" /></div>
           </div>
           <div class="mt-3 flex items-center gap-2">
             <button id="parseBtn" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Leer</button>
@@ -51,25 +48,10 @@
         </div>
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">2) Mapeo de columnas</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label class="block text-xs text-slate-500 mb-1">Ganador</label><select id="mapWinner" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Odd</label><select id="mapOdd" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Tipo</label><select id="mapType" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Equipos (A vs B)</label><select id="mapTeams" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-          </div>
-          <div class="mt-3 flex items-center gap-2">
-            <button id="autoMap" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-500">Auto‑mapear</button>
-          </div>
-        </div>
-
-        <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">3) Validar y construir</h2>
-          <div class="flex items-center gap-3">
-            <label class="flex items-center gap-2 text-sm">
-              <input id="validateOn" type="checkbox" class="h-4 w-4" checked> Validar ganador ∈ {home, away} (o 'Empate' en fútbol)
-            </label>
-          </div>
+          <h2 class="text-lg font-semibold mb-3">2) Construir & Validar</h2>
+          <label class="flex items-center gap-2 text-sm">
+            <input id="validateOn" type="checkbox" class="h-4 w-4" checked> Validar ganador ∈ {home, away} (o 'Empate' en Fútbol)
+          </label>
           <button id="buildBtn" class="mt-3 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Construir líneas</button>
           <div id="summary" class="mt-3 text-xs text-slate-500"></div>
         </div>
@@ -86,7 +68,7 @@
       <div class="lg:col-span-3 space-y-6">
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Previsualización</h2>
+            <h2 class="text-lg font-semibold">Previsualización (A)</h2>
             <div class="text-xs text-slate-500"><span id="previewCount">0</span> filas</div>
           </div>
           <div class="overflow-auto rounded-xl border border-slate-200">
@@ -110,13 +92,13 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const state = { wb:null, fileName:null, rows:[], headers:[], built:[], sheet:null };
+    const state = { wb:null, fileName:null, lines:[], built:[], sheet:null };
 
     function setFileInfo(txt){ $("fileInfo").textContent = txt; }
     function clearAll(){
-      state.wb=null; state.fileName=null; state.rows=[]; state.headers=[]; state.built=[]; state.sheet=null;
-      $("sheetSel").innerHTML = ""; $("headerRow").value=1; setFileInfo("Sin archivo");
-      renderPreview([]); renderBuilt([]); populateMapping([]); $("summary").textContent="";
+      state.wb=null; state.fileName=null; state.lines=[]; state.built=[]; state.sheet=null;
+      $("sheetSel").innerHTML = ""; setFileInfo("Sin archivo");
+      renderPreview([]); renderBuilt([]); $("summary").textContent="";
     }
     function handleDrop(e){
       e.preventDefault(); e.stopPropagation();
@@ -143,53 +125,43 @@
       sheets.forEach((s,i)=>{ const opt=document.createElement("option"); opt.value=s; opt.textContent=s+(i===0?" (sugerida)":""); sel.appendChild(opt); });
       state.sheet = sheets[0] || null;
     }
-    function parseSheet(){
-      const sheetName = $("sheetSel").value || state.sheet;
-      if(!sheetName){ alert("No hay hojas."); return; }
-      state.sheet = sheetName;
-      const ws = state.wb.Sheets[sheetName];
-      const headerRow = Math.max(1, parseInt($("headerRow").value || "1", 10));
-      const arr = XLSX.utils.sheet_to_json(ws, { header: 1, raw:false, defval:"" });
-      if(!arr || !arr.length){ renderPreview([]); return; }
-      const headerIdx = headerRow-1;
-      const headers = (arr[headerIdx] || []).map(h => (h||"").toString().trim());
-      const rows = arr.slice(headerIdx+1).map(r => {
-        const obj={}; headers.forEach((h,i)=> obj[h || ("col_"+(i+1))] = (r[i] ?? "")); return obj;
-      });
-      state.headers=headers; state.rows=rows;
-      renderPreview(rows, headers);
-      populateMapping(headers);
-    }
-    function renderPreview(rows, headers){
+    function renderPreview(lines){
       const table = $("previewTable"); table.innerHTML="";
-      if(!rows || !rows.length){ $("previewCount").textContent="0"; return; }
-      const cols = headers && headers.length ? headers : Object.keys(rows[0]);
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
-      cols.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
+      ["Fila","apuesta"].forEach(h=>{ const th=document.createElement("th"); th.textContent=h; thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
-      const tbody=document.createElement("tbody");
-      const MAX=100;
-      rows.slice(0,MAX).forEach(r=>{
+      const tbody=document.createElement("tbody"); const MAX=200;
+      lines.slice(0,MAX).forEach((t,i)=>{
         const tr=document.createElement("tr");
-        cols.forEach(c=>{ const td=document.createElement("td"); td.textContent=(r[c] ?? ""); tr.appendChild(td); });
+        const td1=document.createElement("td"); td1.textContent=(i+2); tr.appendChild(td1);
+        const td2=document.createElement("td"); td2.textContent=(t ?? ""); tr.appendChild(td2);
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      $("previewCount").textContent = rows.length.toString();
+      $("previewCount").textContent = lines.length.toString();
     }
-    function populateMapping(headers){
-      ["mapWinner","mapOdd","mapType","mapTeams"].forEach(id=>{
-        const sel=$(id); sel.innerHTML="<option value=''>—</option>";
-        headers.forEach(h=>{ const o=document.createElement("option"); o.value=h; o.textContent=h; sel.appendChild(o); });
-      });
-    }
-    function autoMap(){
-      const H = state.headers.map(h=>({h, l: h.toLowerCase()}));
-      const pick = (subs)=>{ const c=H.find(x=>subs.some(s=>x.l.includes(s))); return c?c.h:""; };
-      $("mapWinner").value = pick(["ganador","winner","pick","sele","seleccion","selection"]);
-      $("mapOdd").value    = pick(["odd","cuota","odds","price","momio","decimal","american"]);
-      $("mapType").value   = pick(["tipo","type","market","mercado","apuesta","resultado"]);
-      $("mapTeams").value  = pick(["equipos","match","game","partido","vs","encuentro","teams"]);
+    function parseSheet(){
+      const sheetName = $("sheetSel").value || state.sheet;
+      if(!sheetName){ alert("No hay hojas."); return; }
+      const ws = state.wb.Sheets[sheetName];
+      // Leer toda la hoja como matriz
+      const arr = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:"" });
+      if(!arr || !arr.length){ renderPreview([]); return; }
+      // Esperamos A1 = "apuesta"; desde A2 datos
+      const header = (arr[0] && arr[0][0] ? arr[0][0].toString().trim().toLowerCase() : "");
+      if(header !== "apuesta"){
+        // si no coincide, igual intentamos tomando la primera columna
+        console.warn("A1 no es 'apuesta', detectado:", header);
+      }
+      const lines = [];
+      for(let i=1;i<arr.length;i++){
+        const row = arr[i];
+        const val = row && row.length ? String(row[0] ?? "").trim() : "";
+        if(val) lines.push(val);
+      }
+      state.sheet = sheetName;
+      state.lines = lines;
+      renderPreview(lines);
     }
     function normalizeOdds(v){
       const s = (v ?? "").toString().trim().replace(",", ".");
@@ -198,57 +170,64 @@
       const num = Number(s); if(Number.isFinite(num)) return { type:"decimal", value: num };
       return { type:"raw", value: (v ?? "").toString() };
     }
-    function splitTeams(s){
-      if(!s) return { home:"", away:"", raw:"" };
-      const raw = s.toString();
+    function splitTeams(raw){
+      if(!raw) return {home:"",away:""};
+      const s = raw.toString();
       const seps = [" vs ", " vs. ", " v ", " @ ", " - ", " — ", " – "];
-      for(const sep of seps){
-        if(raw.includes(sep)){
-          const [a,b] = raw.split(sep, 1);
-          return { home:(a||""+"").trim(), away:(b||""+"").trim(), raw:raw.trim() };
-        }
-      }
-      const m = raw.split(/\s+(?:vs\.?|v|@|\-+|—|–)\s+/i);
-      if(m.length>=2) return { home:(m[0]||"").trim(), away:(m[1]||"").trim(), raw:raw.trim() };
-      return { home: raw.trim(), away: "", raw: raw.trim() };
+      for(const sep of seps){ if(s.includes(sep)){ const [a,b]=s.split(sep,1); return {home:(a||"").trim(), away:(b||"").trim()}; } }
+      const m = s.split(/\s+(?:vs\.?|v|@|\-+|—|–)\s+/i);
+      if(m.length>=2) return {home:(m[0]||"").trim(), away:(m[1]||"").trim()};
+      return {home:s.trim(), away:""};
     }
     function inferSport(typeStr){
-      const t=(typeStr||"").toString().trim().toLowerCase();
+      const t=(typeStr||"").toString().toLowerCase();
       if(t === "ganador") return "Tenis";
       if(t.includes("resultado del partido") || (t.includes("resultado") && t.includes("partido"))) return "Fútbol";
       return "";
     }
-    function eqNorm(a,b){
-      return a.toString().trim().toLowerCase() === b.toString().trim().toLowerCase();
+    function extractLabeled(s, key){
+      const re = {
+        winner: /(ganador|winner|selecci[oó]n|pick)\s*[:=-]\s*([^|;,\n]+)/i,
+        odd: /(odd|odds|cuota|price|momio|decimal|american)\s*[:=-]\s*([+\-]?\d+(?:[.,]\d+)?)/i,
+        type: /(tipo|type|market|mercado|apuesta|resultado(?:\s+del)?\s+partido|ganador)\s*[:=-]\s*([^|;,\n]+)/i,
+        teams: /(equipos|match|game|partido)\s*[:=-]\s*([^|\n]+)/i
+      }[key];
+      const m = re ? s.match(re) : null;
+      if(!m) return "";
+      return (m[2] || m[3] || "").trim();
     }
-    function validateWinner(sport, winner, home, away, typeStr){
-      if(!winner) return { valid:false, note:"Winner vacío" };
-      if(sport === "Fútbol"){
-        if(eqNorm(winner, "empate")) return { valid:true, note:"Empate válido" };
-        if(eqNorm(winner, home) || eqNorm(winner, away)) return { valid:true, note:"OK" };
-        return { valid:false, note:"Winner no coincide con equipos" };
-      }
-      if(sport === "Tenis"){
-        if(eqNorm(winner, home) || eqNorm(winner, away)) return { valid:true, note:"OK" };
-        return { valid:false, note:"Winner no coincide con jugadores" };
-      }
-      return { valid:true, note:"Deporte no inferido" };
+    function fallbackOdd(s){
+      const m = s.match(/([+\-]?\d+(?:[.,]\d+)?)/);
+      return m ? m[1] : "";
     }
     function buildLines(){
-      const mw = $("mapWinner").value, mo=$("mapOdd").value, mt=$("mapType").value, me=$("mapTeams").value;
-      const miss=[]; if(!mw) miss.push("Ganador"); if(!mo) miss.push("Odd"); if(!mt) miss.push("Tipo"); if(!me) miss.push("Equipos");
-      if(miss.length){ alert("Falta mapear: "+miss.join(", ")); return; }
       const validate = $("validateOn").checked;
-      const built = state.rows.map(r=>{
-        const winner=(r[mw]??"").toString();
-        const odd=normalizeOdds(r[mo]);
-        const type=(r[mt]??"").toString();
-        const sport=inferSport(type);
-        const teams=splitTeams(r[me]);
-        const val = validate ? validateWinner(sport, winner, teams.home, teams.away, type) : {valid:true, note:"(sin validar)"};
-        return { sport, winner, odd_type: odd?odd.type:"", odd_value: odd?odd.value:"", type, home: teams.home, away: teams.away, teamsRaw: teams.raw, valid: val.valid, note: val.note };
+      const built = state.lines.map(line => {
+        const winnerL = extractLabeled(line, "winner");
+        const oddL = extractLabeled(line, "odd") || fallbackOdd(line);
+        const typeL = extractLabeled(line, "type");
+        const teamsL = extractLabeled(line, "teams");
+        const teamsStr = teamsL || line; // por si viene inline sin etiqueta
+        const teams = splitTeams(teamsStr);
+        const sport = inferSport(typeL);
+        const odd = normalizeOdds(oddL);
+        const winner = winnerL || ""; // si no hay etiqueta, no arriesgamos heurística
+        // Validación
+        let valid=true, note="OK";
+        const w = (winner||"").toString().trim().toLowerCase();
+        const h = (teams.home||"").toString().trim().toLowerCase();
+        const a = (teams.away||"").toString().trim().toLowerCase();
+        if(validate){
+          if(!w){ valid=false; note="Winner vacío"; }
+          else if(sport==="Fútbol"){
+            if(w!=="empate" && w!==h && w!==a){ valid=false; note="Winner no coincide con equipos"; }
+          } else if(sport==="Tenis"){
+            if(w!==h && w!==a){ valid=false; note="Winner no coincide con jugadores"; }
+          }
+        }
+        return { sport, winner, odd_type: odd?odd.type:"", odd_value: odd?odd.value:"", type: typeL, home: teams.home, away: teams.away, teamsRaw: teamsStr, valid, note };
       });
-      state.built=built;
+      state.built = built;
       renderBuilt(built);
       const total=built.length, bad=built.filter(x=>!x.valid).length;
       $("summary").textContent = `Construidas: ${total} • Inválidas: ${bad} • Válidas: ${total-bad}`;
@@ -272,7 +251,7 @@
     }
     function exportJSON(){
       const blob=new Blob([JSON.stringify(state.built,null,2)],{type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_validated.json"; a.click(); URL.revokeObjectURL(a.href);
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_from_colA.json"; a.click(); URL.revokeObjectURL(a.href);
     }
     function exportCSV(){
       if(!state.built.length){ alert("No hay líneas."); return; }
@@ -280,7 +259,7 @@
       const head=cols.join(",")+"\n";
       const rows=state.built.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n");
       const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_validated.csv"; a.click(); URL.revokeObjectURL(a.href);
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_from_colA.csv"; a.click(); URL.revokeObjectURL(a.href);
     }
     // Events
     $("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });
@@ -289,7 +268,6 @@
     $("fileInput").addEventListener("change", e=>{ if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]); });
     $("parseBtn").addEventListener("click", parseSheet);
     $("clearBtn").addEventListener("click", clearAll);
-    $("autoMap").addEventListener("click", autoMap);
     $("buildBtn").addEventListener("click", buildLines);
     $("exportJSON").addEventListener("click", exportJSON);
     $("exportCSV").addEventListener("click", exportCSV);

@@ -1,3 +1,3 @@
-# MMSports — Project Site (v1.7)
+# MMSports — Project Site (v1.8)
 
-SportsBets: inferencia de **deporte** por `Tipo` y **validación** de que el `winner` coincide con `home`/`away` (o 'Empate' en fútbol). Publicación vía GitHub Pages.
+SportsBets ahora lee archivos donde **A1 = 'apuesta'** y desde **A2..N** cada celda contiene la línea completa. Se extraen Ganador, Odd, Tipo y Equipos con etiquetas o heurísticas, se infiere el deporte y se valida el ganador.
