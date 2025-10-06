@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TennisSimulator — v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Probabilidades de ganar un partido de tenis entre dos jugadores usando modelo logístico + simulación Monte Carlo por sets, con odds e intervalos de confianza." />
+  <style>
+    .card { transition: box-shadow .2s ease, transform .2s ease; }
+    .card:hover { box-shadow: 0 10px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .mono { font-feature-settings: "ss01" on, "ss02" on; }
+    .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .number-input { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div id="site-navbar"></div>
+  <header class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="flex items-center justify-between gap-4">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">TennisSimulator</h1>
+      <div class="text-sm text-slate-500">v2.0 • 2025‑10‑06</div>
+    </div>
+    <p class="mt-2 text-slate-600">
+      Modelo <span class="font-semibold">logístico</span> + <span class="font-semibold">simulación Monte Carlo por sets</span>, con conversión a <span class="italic">odds</span>
+      (decimal/americana) e <span class="italic">intervalos de confianza</span>.
+    </p>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-28">
+    <section class="card bg-white rounded-2xl shadow-sm p-5 md:p-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Superficie</label>
+          <select id="surface" class="w-full rounded-xl border border-slate-200 p-2.5">
+            <option value="hard">Hard</option>
+            <option value="clay">Clay</option>
+            <option value="grass">Grass</option>
+            <option value="carpet">Carpet/Indoor</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Formato del partido</label>
+          <select id="format" class="w-full rounded-xl border border-slate-200 p-2.5">
+            <option value="bo3">Best of 3</option>
+            <option value="bo5">Best of 5</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1">H2H: Gana A</label>
+            <input id="h2hA" type="number" min="0" step="1" value="0" class="number-input w-full rounded-xl border border-slate-200 p-2.5"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">H2H: Gana B</label>
+            <input id="h2hB" type="number" min="0" step="1" value="0" class="number-input w-full rounded-xl border border-slate-200 p-2.5"/>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="card bg-white rounded-2xl shadow-sm p-5 md:p-6">
+        <h2 class="text-lg font-semibold mb-4">Jugador A</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Nombre</label>
+            <input id="nameA" type="text" placeholder="Jugador A" class="w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Ranking (ATP/WTA)</label>
+            <input id="rankA" type="number" min="1" step="1" placeholder="opcional" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Elo (opcional)</label>
+            <input id="eloA" type="number" min="500" max="3500" step="1" placeholder="opcional" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Forma (últ. 10): Victorias</label>
+            <input id="formWinsA" type="number" min="0" max="10" step="1" value="5" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Superficie (últ. 10): Victorias</label>
+            <input id="surfWinsA" type="number" min="0" max="10" step="1" value="5" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Juegos de saque ganados %</label>
+            <input id="holdA" type="number" min="0" max="100" step="0.1" value="80" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Juegos de resto ganados %</label>
+            <input id="breakA" type="number" min="0" max="100" step="0.1" value="25" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-white rounded-2xl shadow-sm p-5 md:p-6">
+        <h2 class="text-lg font-semibold mb-4">Jugador B</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Nombre</label>
+            <input id="nameB" type="text" placeholder="Jugador B" class="w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Ranking (ATP/WTA)</label>
+            <input id="rankB" type="number" min="1" step="1" placeholder="opcional" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Elo (opcional)</label>
+            <input id="eloB" type="number" min="500" max="3500" step="1" placeholder="opcional" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Forma (últ. 10): Victorias</label>
+            <input id="formWinsB" type="number" min="0" max="10" step="1" value="5" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Superficie (últ. 10): Victorias</label>
+            <input id="surfWinsB" type="number" min="0" max="10" step="1" value="5" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Juegos de saque ganados %</label>
+            <input id="holdB" type="number" min="0" max="100" step="0.1" value="80" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Juegos de resto ganados %</label>
+            <input id="breakB" type="number" min="0" max="100" step="0.1" value="25" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <details class="card bg-white rounded-2xl shadow-sm p-5 md:p-6 mb-6 open:animate-[fadeIn_.2s_ease]">
+      <summary class="cursor-pointer text-lg font-semibold mb-2">Ajustes (modelo & simulación)</summary>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mt-3">
+        <div>
+          <label class="block text-sm font-medium mb-1">Peso Elo/Ranking</label>
+          <input id="wElo" type="number" step="0.05" value="1.00" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Peso Superficie</label>
+          <input id="wSurf" type="number" step="0.05" value="0.80" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Peso Forma</label>
+          <input id="wForm" type="number" step="0.05" value="0.60" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Peso H2H</label>
+          <input id="wH2H" type="number" step="0.05" value="0.40" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Peso Saque+Resto</label>
+          <input id="wSR" type="number" step="0.05" value="0.80" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Escala logística (k)</label>
+          <input id="kScale" type="number" step="0.05" value="1.00" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Simulaciones Monte Carlo</label>
+          <input id="mcRuns" type="number" min="100" step="100" value="5000" class="number-input w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Saca primero</label>
+          <select id="firstServe" class="w-full rounded-xl border border-slate-200 p-2.5">
+            <option value="random">Aleatorio</option>
+            <option value="A">Jugador A</option>
+            <option value="B">Jugador B</option>
+          </select>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">
+        La simulación por sets usa <span class="font-medium">hold%</span> y <span class="font-medium">break%</span> para derivar la probabilidad de ganar cada juego en función del servidor.
+        El tie‑break se aproxima con una probabilidad basada en el desempeño medio de juego.
+      </p>
+    </details>
+
+    <section class="flex flex-wrap items-center gap-3 mb-6">
+      <button id="calcBtn" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-500 active:bg-indigo-700">Calcular probabilidad</button>
+      <button id="resetBtn" class="px-4 py-2.5 rounded-xl bg-slate-200 text-slate-800 font-medium hover:bg-slate-300">Reset</button>
+      <div class="ml-auto flex items-center gap-2">
+        <button id="exportBtn" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500">Exportar JSON</button>
+        <label class="px-3 py-2 rounded-xl bg-slate-800 text-white text-sm font-medium cursor-pointer hover:bg-slate-700">
+          Importar JSON
+          <input id="importFile" type="file" accept="application/json" class="hidden" />
+        </label>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="card bg-white rounded-2xl shadow-sm p-5 md:p-6 lg:col-span-2">
+        <h3 class="text-lg font-semibold mb-1">Resultado del partido</h3>
+        <p class="text-xs text-slate-500 mb-4">Se muestran las probabilidades del <span class="font-medium">modelo logístico</span> y la <span class="font-medium">simulación Monte Carlo</span>.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-sm text-slate-600"><span id="labelA" class="font-medium">Jugador A</span> gana</div>
+              <div class="text-sm font-semibold" id="pA">–</div>
+            </div>
+            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+              <div id="barA" class="h-3 bg-indigo-600" style="width: 0%"></div>
+            </div>
+            <div class="mt-2 text-xs text-slate-600">
+              Logístico: <span id="pA_logit">–</span> • Monte Carlo: <span id="pA_mc">–</span> <span id="pA_ci" class="text-slate-500"></span>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-sm text-slate-600"><span id="labelB" class="font-medium">Jugador B</span> gana</div>
+              <div class="text-sm font-semibold" id="pB">–</div>
+            </div>
+            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+              <div id="barB" class="h-3 bg-slate-900" style="width: 0%"></div>
+            </div>
+            <div class="mt-2 text-xs text-slate-600">
+              Logístico: <span id="pB_logit">–</span> • Monte Carlo: <span id="pB_mc">–</span> <span id="pB_ci" class="text-slate-500"></span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-slate-600">Confianza del modelo (inputs): <span id="confidence" class="font-medium">–</span></div>
+      </div>
+
+      <div class="card bg-white rounded-2xl shadow-sm p-5 md:p-6">
+        <h3 class="text-lg font-semibold mb-3">Odds equivalentes</h3>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="p-3 rounded-xl bg-slate-100">
+            <div class="font-semibold mb-1" id="oddsALabel">Jugador A</div>
+            <div>Decimal: <span id="oddsA_dec">–</span></div>
+            <div>Americana: <span id="oddsA_amer">–</span></div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-100">
+            <div class="font-semibold mb-1" id="oddsBLabel">Jugador B</div>
+            <div>Decimal: <span id="oddsB_dec">–</span></div>
+            <div>Americana: <span id="oddsB_amer">–</span></div>
+          </div>
+        </div>
+        <h4 class="text-sm font-semibold mt-4 mb-2">Desglose de contribuciones (modelo logístico)</h4>
+        <ul id="contrib" class="space-y-2 text-sm"></ul>
+        <p class="mt-3 text-xs text-slate-500">Las contribuciones son previas a la logística. Positivo favorece a <span class="font-medium">Jugador A</span>, negativo a <span class="font-medium">Jugador B</span>.</p>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-center text-xs text-slate-500">v2.0 • Simulación por sets + odds • Ajusta, itera y valida con tus datos</footer>
+  </main>
+
+  <div id="site-footer"></div>
+  <script type="module">
+    const $ = (id) => document.getElementById(id);
+    const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+    const logistic = (x) => 1 / (1 + Math.exp(-x));
+    const fmtPct = (p) => (Math.round(p * 1000) / 10) + '%';
+    function parseNum(el, fallback = null) { const v = parseFloat(el.value); return Number.isFinite(v) ? v : fallback; }
+    function pseudoEloFromRank(rank) { if (!Number.isFinite(rank)) return null; const e = 2600 - 2.0 * Math.min(rank, 800); return clamp(e, 1200, 2600); }
+
+    function getPlayerInput(prefix) {
+      return { name: $("name"+prefix).value.trim() || (prefix==='A'?'Jugador A':'Jugador B'),
+        rank: parseNum($("rank"+prefix)), elo: parseNum($("elo"+prefix)),
+        formWins: clamp(parseNum($("formWins"+prefix), 5), 0, 10),
+        surfWins: clamp(parseNum($("surfWins"+prefix), 5), 0, 10),
+        hold: clamp(parseNum($("hold"+prefix), 80), 0, 100),
+        brk: clamp(parseNum($("break"+prefix), 25), 0, 100) };
+    }
+    function computeWeights() { return { wElo: parseNum($("wElo"),1.0), wSurf: parseNum($("wSurf"),0.8), wForm: parseNum($("wForm"),0.6), wH2H: parseNum($("wH2H"),0.4), wSR: parseNum($("wSR"),0.8), k: parseNum($("kScale"),1.0) }; }
+    function computeFeatures(A,B,h2hA,h2hB){
+      const eloA = Number.isFinite(A.elo)?A.elo:pseudoEloFromRank(A.rank); const eloB = Number.isFinite(B.elo)?B.elo:pseudoEloFromRank(B.rank);
+      const eloDiff=(Number.isFinite(eloA)&&Number.isFinite(eloB))?(eloA-eloB):0; const fElo=eloDiff/100;
+      const fForm=(A.formWins-B.formWins)/10; const fSurf=(A.surfWins-B.surfWins)/10;
+      const totalH2H=h2hA+h2hB; const fH2H= totalH2H>0 ? (h2hA-h2hB)/(totalH2H+1) : 0;
+      const srA=(A.hold+A.brk)-100; const srB=(B.hold+B.brk)-100; const fSR=(srA-srB)/20;
+      return { fElo,fSurf,fForm,fH2H,fSR, eloA,eloB };
+    }
+    function combineToProbability(feats,weights,bo5=false){
+      const { fElo,fSurf,fForm,fH2H,fSR }=feats; const { wElo,wSurf,wForm,wH2H,wSR,k }=weights;
+      const score=(wElo*fElo)+(wSurf*fSurf)+(wForm*fForm)+(wH2H*fH2H)+(wSR*fSR);
+      let p=logistic(k*score);
+      if(bo5){ const f=1.35; const odds=p/(1-p); const adjOdds=Math.pow(odds,f); p=adjOdds/(1+adjOdds); }
+      return { pA:p, score };
+    }
+
+    function pickFirstServer(mode){ if(mode==='A'||mode==='B')return mode; return Math.random()<0.5?'A':'B'; }
+    function tieBreakProb(pHoldA,pHoldB){ const pGameA=(pHoldA+(1-pHoldB))/2; return logistic(5*(pGameA-0.5)); }
+    function simulateSet(pHoldA,pHoldB,firstServer){
+      let a=0,b=0; let server=firstServer;
+      for(let g=0; g<50; g++){
+        const pA= server==='A' ? pHoldA : (1-pHoldB);
+        if(Math.random()<pA) a++; else b++;
+        if((a>=6||b>=6)&&Math.abs(a-b)>=2) return a>b?'A':'B';
+        if(a===6 && b===6){ const pTB=tieBreakProb(pHoldA,pHoldB); return (Math.random()<pTB)?'A':'B'; }
+        server= server==='A' ? 'B' : 'A';
+      }
+      return a>=b?'A':'B';
+    }
+    function simulateMatch(format,pHoldA,pHoldB,firstServeMode){
+      const need=(format==='bo5')?3:2; let setsA=0,setsB=0;
+      while(setsA<need && setsB<need){ const fs=pickFirstServer(firstServeMode); const w=simulateSet(pHoldA,pHoldB,fs); if(w==='A') setsA++; else setsB++; }
+      return setsA>setsB?'A':'B';
+    }
+    function runMonteCarlo(format,pHoldA,pHoldB,firstServeMode,runs=5000){
+      let winsA=0; for(let i=0;i<runs;i++){ if(simulateMatch(format,pHoldA,pHoldB,firstServeMode)==='A') winsA++; }
+      const p=winsA/runs; const se=Math.sqrt(p*(1-p)/runs); const lo=Math.max(0,p-1.96*se); const hi=Math.min(1,p+1.96*se);
+      return { pA:p, ci:[lo,hi], runs };
+    }
+
+    function toDecimalOdds(p){ if(p<=0) return '∞'; return (1/p).toFixed(2); }
+    function toAmericanOdds(p){ if(p<=0||p>=1) return '—'; if(p>0.5){ const val=Math.round(100*p/(1-p)); return '-'+val; } else { const val=Math.round(100*(1-p)/p); return '+'+val; } }
+
+    function render(A,B,pLogit,feats,weights,mcRes){
+      const $ = (id) => document.getElementById(id);
+      $("labelA").textContent=A.name||'Jugador A'; $("labelB").textContent=B.name||'Jugador B';
+      const pA_final= mcRes?mcRes.pA:pLogit; const pB_final=1-pA_final;
+      $("pA").textContent=fmtPct(pA_final); $("pB").textContent=fmtPct(pB_final);
+      document.getElementById("barA").style.width=(pA_final*100)+'%';
+      document.getElementById("barB").style.width=(pB_final*100)+'%';
+      $("pA_logit").textContent=fmtPct(pLogit); $("pB_logit").textContent=fmtPct(1-pLogit);
+      if(mcRes){ $("pA_mc").textContent=fmtPct(mcRes.pA); $("pB_mc").textContent=fmtPct(1-mcRes.pA);
+        $("pA_ci").textContent=` (IC95% ${fmtPct(mcRes.ci[0])}–${fmtPct(mcRes.ci[1])}, n=${mcRes.runs})`;
+        $("pB_ci").textContent=` (IC95% ${fmtPct(1-mcRes.ci[1])}–${fmtPct(1-mcRes.ci[0])}, n=${mcRes.runs})`; }
+      else { $("pA_mc").textContent='—'; $("pB_mc").textContent='—'; $("pA_ci").textContent=''; $("pB_ci").textContent=''; }
+      document.getElementById("oddsALabel").textContent=A.name||'Jugador A';
+      document.getElementById("oddsBLabel").textContent=B.name||'Jugador B';
+      document.getElementById("oddsA_dec").textContent=toDecimalOdds(pA_final);
+      document.getElementById("oddsB_dec").textContent=toDecimalOdds(pB_final);
+      document.getElementById("oddsA_amer").textContent=toAmericanOdds(pA_final);
+      document.getElementById("oddsB_amer").textContent=toAmericanOdds(pB_final);
+      const list=document.getElementById("contrib"); list.innerHTML='';
+      const items=[
+        {label:'Elo/Ranking', val: weights.wElo*feats.fElo},
+        {label:'Superficie',  val: weights.wSurf*feats.fSurf},
+        {label:'Forma',       val: weights.wForm*feats.fForm},
+        {label:'Head‑to‑Head',val: weights.wH2H*feats.fH2H},
+        {label:'Saque+Resto', val: weights.wSR*feats.fSR},
+      ];
+      for(const it of items){
+        const sign= it.val>=0?'+':'−'; const mag=Math.abs(it.val); const pct=Math.max(0, Math.min(100, Math.round((mag/3)*100)));
+        const li=document.createElement('li');
+        li.innerHTML=`<div class="flex items-center justify-between"><div>${it.label}</div><div class="mono tabular-nums">${sign}${mag.toFixed(2)}</div></div>
+          <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
+            <div class="h-2 ${it.val>=0?'bg-indigo-600':'bg-slate-900'}" style="width:${pct}%"></div>
+          </div>`;
+        list.appendChild(li);
+      }
+    }
+
+    function computeConfidence(A,B){
+      let parts=0;
+      if(Number.isFinite(A.elo)||Number.isFinite(A.rank)) parts++;
+      if(Number.isFinite(B.elo)||Number.isFinite(B.rank)) parts++;
+      if(A.formWins!==null && B.formWins!==null) parts++;
+      if(A.surfWins!==null && B.surfWins!==null) parts++;
+      if(A.hold!==null && A.brk!==null && B.hold!==null && B.brk!==null) parts++;
+      const conf=Math.max(0, Math.min(100, Math.round((parts/5)*100 - ((!Number.isFinite(A.elo)||!Number.isFinite(B.elo))?8:0))));
+      return conf;
+    }
+
+    function exportJSON(){
+      const state={
+        surface: document.getElementById("surface").value,
+        format: document.getElementById("format").value,
+        h2hA: parseFloat(document.getElementById("h2hA").value||0),
+        h2hB: parseFloat(document.getElementById("h2hB").value||0),
+        playerA:{ name: document.getElementById("nameA").value, rank: parseFloat(document.getElementById("rankA").value), elo: parseFloat(document.getElementById("eloA").value),
+          formWins: parseFloat(document.getElementById("formWinsA").value||5), surfWins: parseFloat(document.getElementById("surfWinsA").value||5),
+          hold: parseFloat(document.getElementById("holdA").value||80), brk: parseFloat(document.getElementById("breakA").value||25) },
+        playerB:{ name: document.getElementById("nameB").value, rank: parseFloat(document.getElementById("rankB").value), elo: parseFloat(document.getElementById("eloB").value),
+          formWins: parseFloat(document.getElementById("formWinsB").value||5), surfWins: parseFloat(document.getElementById("surfWinsB").value||5),
+          hold: parseFloat(document.getElementById("holdB").value||80), brk: parseFloat(document.getElementById("breakB").value||25) },
+        weights: { wElo: parseFloat(document.getElementById("wElo").value||1), wSurf: parseFloat(document.getElementById("wSurf").value||0.8), wForm: parseFloat(document.getElementById("wForm").value||0.6), wH2H: parseFloat(document.getElementById("wH2H").value||0.4), wSR: parseFloat(document.getElementById("wSR").value||0.8), k: parseFloat(document.getElementById("kScale").value||1) },
+        mc: { runs: parseFloat(document.getElementById("mcRuns").value||5000), firstServe: document.getElementById("firstServe").value },
+        version: 'v2.0', savedAt: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `tennis_model_${Date.now()}.json`; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function importJSON(file){
+      const reader=new FileReader();
+      reader.onload=(e)=>{ try{ const data=JSON.parse(e.target.result);
+        if(data.surface) document.getElementById("surface").value=data.surface;
+        if(data.format) document.getElementById("format").value=data.format;
+        const set=(id,v)=>{ const el=document.getElementById(id); if(typeof v!=='undefined' && v!==null && !Number.isNaN(v)) el.value=v; };
+        set("h2hA",data.h2hA); set("h2hB",data.h2hB);
+        const A=data.playerA||{}, B=data.playerB||{}, W=data.weights||{}, MC=data.mc||{};
+        set("nameA",A.name); set("rankA",A.rank); set("eloA",A.elo); set("formWinsA",A.formWins); set("surfWinsA",A.surfWins); set("holdA",A.hold); set("breakA",A.brk);
+        set("nameB",B.name); set("rankB",B.rank); set("eloB",B.elo); set("formWinsB",B.formWins); set("surfWinsB",B.surfWins); set("holdB",B.hold); set("breakB",B.brk);
+        set("wElo",W.wElo); set("wSurf",W.wSurf); set("wForm",W.wForm); set("wH2H",W.wH2H); set("wSR",W.wSR); set("kScale",W.k);
+        set("mcRuns",MC.runs); if(MC.firstServe) document.getElementById("firstServe").value=MC.firstServe;
+      }catch(_){ alert('Archivo JSON inválido'); } };
+      reader.readAsText(file);
+    }
+
+    function readAllInputs(){
+      const A=getPlayerInput('A'), B=getPlayerInput('B');
+      const h2hA=parseFloat(document.getElementById("h2hA").value||0);
+      const h2hB=parseFloat(document.getElementById("h2hB").value||0);
+      const weights=computeWeights();
+      const format=document.getElementById("format").value;
+      const mcRuns=parseFloat(document.getElementById("mcRuns").value||5000);
+      const firstServe=document.getElementById("firstServe").value;
+      return {A,B,h2hA,h2hB,weights,format,mcRuns,firstServe};
+    }
+    function validateInputs(A,B){
+      const errs=[];
+      for(const [lbl,v] of [["A hold%",A.hold],["A break%",A.brk],["B hold%",B.hold],["B break%",B.brk]]){ if(!Number.isFinite(v)||v<0||v>100) errs.push(`${lbl} debe estar en 0–100`); }
+      for(const [lbl,v] of [["A forma",A.formWins],["B forma",B.formWins],["A superficie",A.surfWins],["B superficie",B.surfWins]]){ if(!Number.isFinite(v)||v<0||v>10) errs.push(`${lbl} (victorias) debe estar en 0–10`); }
+      return errs;
+    }
+    function render(A,B,pLogit,feats,weights,mcRes){ /* already defined above */ }
+
+    function calculate(){
+      const {A,B,h2hA,h2hB,weights,format,mcRuns,firstServe}=readAllInputs();
+      const errs=validateInputs(A,B); if(errs.length){ alert('Corrige los siguientes errores:\n\n'+errs.join('\n')); return; }
+      const feats=computeFeatures(A,B,h2hA,h2hB);
+      const { pA: pLogit }=combineToProbability(feats,weights, format==='bo5');
+      const pHoldA=A.hold/100, pHoldB=B.hold/100;
+      const mcRes=runMonteCarlo(format,pHoldA,pHoldB,firstServe,mcRuns);
+      // update UI
+      document.getElementById("confidence").textContent = computeConfidence(A,B) + '%';
+      // create labels expected by render
+      window.document.getElementById("labelA").textContent = A.name||'Jugador A';
+      window.document.getElementById("labelB").textContent = B.name||'Jugador B';
+      // render (function defined earlier)
+      (function(){const $=(id)=>document.getElementById(id);
+        const pA_final= mcRes?mcRes.pA:pLogit; const pB_final=1-pA_final;
+        $("pA").textContent=fmtPct(pA_final); $("pB").textContent=fmtPct(pB_final);
+        document.getElementById("barA").style.width=(pA_final*100)+'%'; document.getElementById("barB").style.width=(pB_final*100)+'%';
+        $("pA_logit").textContent=fmtPct(pLogit); $("pB_logit").textContent=fmtPct(1-pLogit);
+        if(mcRes){ $("pA_mc").textContent=fmtPct(mcRes.pA); $("pB_mc").textContent=fmtPct(1-mcRes.pA);
+          $("pA_ci").textContent=` (IC95% ${fmtPct(mcRes.ci[0])}–${fmtPct(mcRes.ci[1])}, n=${mcRes.runs})`;
+          $("pB_ci").textContent=` (IC95% ${fmtPct(1-mcRes.ci[1])}–${fmtPct(1-mcRes.ci[0])}, n=${mcRes.runs})`; }
+        else { $("pA_mc").textContent='—'; $("pB_mc").textContent='—'; $("pA_ci").textContent=''; $("pB_ci").textContent=''; }
+        $("oddsALabel").textContent=A.name||'Jugador A'; $("oddsBLabel").textContent=B.name||'Jugador B';
+        const toDec=(p)=> p<=0 ? '∞' : (1/p).toFixed(2); const toAmer=(p)=> p<=0||p>=1 ? '—' : (p>0.5?('-'+Math.round(100*p/(1-p))):('+'+Math.round(100*(1-p)/p)));
+        $("oddsA_dec").textContent=toDec(pA_final); $("oddsB_dec").textContent=toDec(pB_final);
+        $("oddsA_amer").textContent=toAmer(pA_final); $("oddsB_amer").textContent=toAmer(pB_final);
+        const list=$("contrib"); list.innerHTML=''; const items=[
+          {label:'Elo/Ranking', val: weights.wElo*feats.fElo},
+          {label:'Superficie',  val: weights.wSurf*feats.fSurf},
+          {label:'Forma',       val: weights.wForm*feats.fForm},
+          {label:'Head‑to‑Head',val: weights.wH2H*feats.fH2H},
+          {label:'Saque+Resto', val: weights.wSR*feats.fSR},
+        ];
+        for(const it of items){
+          const sign= it.val>=0?'+':'−'; const mag=Math.abs(it.val); const pct=Math.max(0, Math.min(100, Math.round((mag/3)*100)));
+          const li=document.createElement('li');
+          li.innerHTML=`<div class="flex items-center justify-between"><div>${it.label}</div><div class="mono tabular-nums">${sign}${mag.toFixed(2)}</div></div>
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
+              <div class="h-2 ${it.val>=0?'bg-indigo-600':'bg-slate-900'}" style="width:${pct}%"></div>
+            </div>`;
+          list.appendChild(li);
+        }
+        $("oddsALabel").textContent=A.name||'Jugador A'; $("oddsBLabel").textContent=B.name||'Jugador B';
+      })();
+    }
+
+    function resetAll(){
+      document.querySelectorAll('input').forEach(inp=>{
+        if(inp.type==='number'){ inp.value = inp.id.includes('hold')?80 : inp.id.includes('break')?25 : inp.max==='10'?5 : (inp.id==='mcRuns'?5000:''); }
+        else if(inp.type==='text'){ inp.value=''; }
+      });
+      document.getElementById("h2hA").value=0; document.getElementById("h2hB").value=0;
+      document.getElementById("surface").value='hard'; document.getElementById("format").value='bo3';
+      document.getElementById("wElo").value=1.00; document.getElementById("wSurf").value=0.80; document.getElementById("wForm").value=0.60; document.getElementById("wH2H").value=0.40; document.getElementById("wSR").value=0.80; document.getElementById("kScale").value=1.00;
+      document.getElementById("firstServe").value='random';
+      ["pA","pB","pA_logit","pB_logit","pA_mc","pB_mc"].forEach(id=>document.getElementById(id).textContent='–');
+      document.getElementById("barA").style.width='0%'; document.getElementById("barB").style.width='0%';
+      document.getElementById("contrib").innerHTML=''; document.getElementById("confidence").textContent='–';
+      document.getElementById("pA_ci").textContent=''; document.getElementById("pB_ci").textContent='';
+      document.getElementById("oddsA_dec").textContent='–'; document.getElementById("oddsB_dec").textContent='–';
+      document.getElementById("oddsA_amer").textContent='–'; document.getElementById("oddsB_amer").textContent='–';
+    }
+
+    document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='enter'){ calculate(); }});
+    document.getElementById("calcBtn").addEventListener('click', calculate);
+    document.getElementById("resetBtn").addEventListener('click', resetAll);
+    document.getElementById("exportBtn").addEventListener('click', exportJSON);
+    document.getElementById("importFile").addEventListener('change',(e)=>{ if(e.target.files&&e.target.files[0]) importJSON(e.target.files[0]); });
+
+    calculate();
+  </script>
+</body>
+</html>
