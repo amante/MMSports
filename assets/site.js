@@ -1,6 +1,6 @@
-/* Global navbar + footer injector — v1.4 */
+/* Global navbar + footer injector — v1.5 */
 window.Site = (function () {
-  const VERSION = "1.4.0";
+  const VERSION = "1.5.0";
   const REPO_NAME = "MMSports";
   function el(tag, attrs = {}, children = []) {
     const e = document.createElement(tag);
@@ -29,7 +29,8 @@ window.Site = (function () {
       { label: "Inicio", href: base },
       { label: "WebSites", href: base + "WebSites/" },
       { label: "TennisSimulator", href: base + "WebSites/TennisSimulator/" },
-      { label: "NFLSimulator", href: base + "WebSites/NFLSimulator/" }
+      { label: "NFLSimulator", href: base + "WebSites/NFLSimulator/" },
+      { label: "SportsBets", href: base + "WebSites/SportsBets/" }
     ];
   }
   function currentPath() { return window.location.pathname.replace(/\/+$/, "") + "/"; }
