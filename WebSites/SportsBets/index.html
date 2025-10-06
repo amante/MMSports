@@ -3,28 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SportsBets — Cargar Excel de líneas de apuesta</title>
+  <title>SportsBets — Importar y validar líneas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <meta name="description" content="Carga un archivo Excel/CSV con líneas de apuesta, previsualiza y mapea columnas a un formato canónico." />
+  <meta name="description" content="Importa Excel/CSV con líneas: Ganador, Odd, Tipo, Equipos; infiere deporte y valida que Winner pertenezca a los equipos." />
   <style>
     .card{transition:box-shadow .2s ease, transform .2s ease}
     .card:hover{box-shadow:0 10px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
     .drop{border:2px dashed #cbd5e1}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace}
     table{border-collapse: separate; border-spacing: 0; min-width: 100%}
     th, td{border-bottom:1px solid #e5e7eb; padding:6px 10px; text-align:left; font-size:12px}
     th{position: sticky; top:0; background:#f8fafc; z-index:1}
+    .bad{background:#fff7ed} /* amber-50 */
+    .good{background:#f0fdf4} /* emerald-50 */
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace}
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="site-navbar"></div>
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets</h1>
-      <div class="text-sm text-slate-500">v0.1 (importador)</div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Validación</h1>
+      <div class="text-sm text-slate-500">v1.7</div>
     </div>
-    <p class="mt-2 text-slate-600">Carga un archivo <strong>Excel/CSV</strong> con tus líneas de apuesta, previsualiza y mapea columnas a un formato canónico. Luego definimos juntos cómo generar la “línea de apuesta”.</p>
+    <p class="mt-2 text-slate-600">Mapa tus columnas (Ganador, Odd, Tipo, Equipos). Inferimos el <span class="font-semibold">deporte</span> por <span class="font-mono">Tipo</span> y validamos que el <span class="font-semibold">Ganador</span> pertenezca a los equipos (o sea <em>Empate</em> en fútbol).</p>
 
     <section class="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
       <div class="lg:col-span-2 space-y-6">
@@ -39,14 +41,8 @@
             <p id="fileInfo" class="mt-2 text-xs text-slate-500">Sin archivo</p>
           </div>
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium mb-1">Hoja</label>
-              <select id="sheetSel" class="w-full rounded-xl border border-slate-200 p-2.5"></select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1">Fila de encabezados</label>
-              <input id="headerRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" />
-            </div>
+            <div><label class="block text-sm font-medium mb-1">Hoja</label><select id="sheetSel" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
+            <div><label class="block text-sm font-medium mb-1">Fila de encabezados</label><input id="headerRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" /></div>
           </div>
           <div class="mt-3 flex items-center gap-2">
             <button id="parseBtn" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Leer</button>
@@ -56,29 +52,26 @@
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
           <h2 class="text-lg font-semibold mb-3">2) Mapeo de columnas</h2>
-          <p class="text-sm text-slate-600 mb-3">Selecciona de tus columnas las que correspondan al formato canónico.</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label class="block text-xs text-slate-500 mb-1">Deporte/Liga</label><select id="mapSport" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Mercado</label><select id="mapMarket" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Participante A / Casa</label><select id="mapHome" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Participante B / Visita</label><select id="mapAway" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Línea (spread/total)</label><select id="mapLine" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Cuota/Odds</label><select id="mapOdds" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Fecha/Hora</label><select id="mapDate" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-xs text-slate-500 mb-1">Book/Casa de apuestas</label><select id="mapBook" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div class="sm:col-span-2"><label class="block text-xs text-slate-500 mb-1">ID/Match Code (opcional)</label><select id="mapMatchId" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
+            <div><label class="block text-xs text-slate-500 mb-1">Ganador</label><select id="mapWinner" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
+            <div><label class="block text-xs text-slate-500 mb-1">Odd</label><select id="mapOdd" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
+            <div><label class="block text-xs text-slate-500 mb-1">Tipo</label><select id="mapType" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
+            <div><label class="block text-xs text-slate-500 mb-1">Equipos (A vs B)</label><select id="mapTeams" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
           </div>
           <div class="mt-3 flex items-center gap-2">
             <button id="autoMap" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-500">Auto‑mapear</button>
-            <button id="saveMap" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Guardar mapping</button>
           </div>
         </div>
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">3) Construir líneas (placeholder)</h2>
-          <p class="text-sm text-slate-600">Usaremos tu mapeo para construir objetos canónicos. Luego indicas la lógica final.</p>
-          <button id="buildBtn" class="mt-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Construir líneas</button>
-          <div class="mt-3 text-xs text-slate-500">Salida muestra hasta 100 líneas.</div>
+          <h2 class="text-lg font-semibold mb-3">3) Validar y construir</h2>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 text-sm">
+              <input id="validateOn" type="checkbox" class="h-4 w-4" checked> Validar ganador ∈ {home, away} (o 'Empate' en fútbol)
+            </label>
+          </div>
+          <button id="buildBtn" class="mt-3 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Construir líneas</button>
+          <div id="summary" class="mt-3 text-xs text-slate-500"></div>
         </div>
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
@@ -86,7 +79,6 @@
           <div class="flex items-center gap-2">
             <button id="exportJSON" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Descargar JSON</button>
             <button id="exportCSV" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Descargar CSV</button>
-            <button id="copyJSON" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-500">Copiar JSON</button>
           </div>
         </div>
       </div>
@@ -118,241 +110,189 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const state = { wb: null, fileName: null, rows: [], headers: [], built: [], sheet: null };
+    const state = { wb:null, fileName:null, rows:[], headers:[], built:[], sheet:null };
 
     function setFileInfo(txt){ $("fileInfo").textContent = txt; }
     function clearAll(){
       state.wb=null; state.fileName=null; state.rows=[]; state.headers=[]; state.built=[]; state.sheet=null;
       $("sheetSel").innerHTML = ""; $("headerRow").value=1; setFileInfo("Sin archivo");
-      renderPreview([]); renderBuilt([]); populateMapping([]);
+      renderPreview([]); renderBuilt([]); populateMapping([]); $("summary").textContent="";
     }
-
     function handleDrop(e){
       e.preventDefault(); e.stopPropagation();
       const dt=e.dataTransfer; if(!dt || !dt.files || !dt.files[0]) return;
       const f=dt.files[0]; $("fileInput").files = dt.files; loadFile(f);
       e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300");
     }
-
     function loadFile(file){
       state.fileName=file.name;
       setFileInfo("Archivo: "+file.name+" ("+Math.round(file.size/1024)+" KB)");
       const reader=new FileReader();
       reader.onload = function(ev){
-        try {
-          const data = new Uint8Array(ev.target.result);
-          state.wb = XLSX.read(data, { type: 'array' });
+        try{
+          const data=new Uint8Array(ev.target.result);
+          state.wb = XLSX.read(data, { type:'array' });
           populateSheets();
-        } catch(err){
-          alert("No se pudo leer el archivo. Asegúrate de que sea .xlsx, .xls o .csv");
-          console.error(err);
-        }
+        }catch(err){ alert("No se pudo leer el archivo."); console.error(err); }
       };
       reader.readAsArrayBuffer(file);
     }
-
     function populateSheets(){
       const sheets = state.wb.SheetNames || [];
-      const sel = $("sheetSel");
-      sel.innerHTML = "";
-      sheets.forEach((s,i)=>{
-        const opt = document.createElement("option");
-        opt.value=s; opt.textContent=s + (i===0?" (sugerida)": "");
-        sel.appendChild(opt);
-      });
+      const sel = $("sheetSel"); sel.innerHTML="";
+      sheets.forEach((s,i)=>{ const opt=document.createElement("option"); opt.value=s; opt.textContent=s+(i===0?" (sugerida)":""); sel.appendChild(opt); });
       state.sheet = sheets[0] || null;
     }
-
     function parseSheet(){
       const sheetName = $("sheetSel").value || state.sheet;
-      if(!sheetName){ alert("No hay hojas en el archivo."); return; }
+      if(!sheetName){ alert("No hay hojas."); return; }
       state.sheet = sheetName;
       const ws = state.wb.Sheets[sheetName];
       const headerRow = Math.max(1, parseInt($("headerRow").value || "1", 10));
-      const arr = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+      const arr = XLSX.utils.sheet_to_json(ws, { header: 1, raw:false, defval:"" });
       if(!arr || !arr.length){ renderPreview([]); return; }
-      const headerIdx = headerRow - 1;
+      const headerIdx = headerRow-1;
       const headers = (arr[headerIdx] || []).map(h => (h||"").toString().trim());
       const rows = arr.slice(headerIdx+1).map(r => {
-        const obj = {};
-        headers.forEach((h, i)=> obj[h || ("col_"+(i+1))] = (r[i] ?? ""));
-        return obj;
+        const obj={}; headers.forEach((h,i)=> obj[h || ("col_"+(i+1))] = (r[i] ?? "")); return obj;
       });
       state.headers=headers; state.rows=rows;
       renderPreview(rows, headers);
       populateMapping(headers);
-      tryLoadMapping();
     }
-
     function renderPreview(rows, headers){
-      const table = $("previewTable");
-      table.innerHTML="";
+      const table = $("previewTable"); table.innerHTML="";
       if(!rows || !rows.length){ $("previewCount").textContent="0"; return; }
       const cols = headers && headers.length ? headers : Object.keys(rows[0]);
-      const thead = document.createElement("thead");
-      const thr = document.createElement("tr");
-      cols.forEach(c => { const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
+      const thead=document.createElement("thead"); const thr=document.createElement("tr");
+      cols.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
-      const tbody = document.createElement("tbody");
-      const MAX = 100;
-      rows.slice(0,MAX).forEach(r => {
+      const tbody=document.createElement("tbody");
+      const MAX=100;
+      rows.slice(0,MAX).forEach(r=>{
         const tr=document.createElement("tr");
-        cols.forEach(c => { const td=document.createElement("td"); td.textContent=(r[c] ?? ""); tr.appendChild(td); });
+        cols.forEach(c=>{ const td=document.createElement("td"); td.textContent=(r[c] ?? ""); tr.appendChild(td); });
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
       $("previewCount").textContent = rows.length.toString();
     }
-
     function populateMapping(headers){
-      const ids = ["mapSport","mapMarket","mapHome","mapAway","mapLine","mapOdds","mapDate","mapBook","mapMatchId"];
-      ids.forEach(id=>{ const el=$(id); if(el){ el.innerHTML = "<option value=''>—</option>"; headers.forEach(h=>{ const o=document.createElement('option'); o.value=h; o.textContent=h; el.appendChild(o); }); }});
+      ["mapWinner","mapOdd","mapType","mapTeams"].forEach(id=>{
+        const sel=$(id); sel.innerHTML="<option value=''>—</option>";
+        headers.forEach(h=>{ const o=document.createElement("option"); o.value=h; o.textContent=h; sel.appendChild(o); });
+      });
     }
-
     function autoMap(){
       const H = state.headers.map(h=>({h, l: h.toLowerCase()}));
-      const pick = (subs) => {
-        const cand = H.find(x => subs.some(s => x.l.includes(s)));
-        return cand ? cand.h : "";
-      };
-      $("mapSport").value   = pick(["sport","liga","league"]);
-      $("mapMarket").value  = pick(["market","mercado","tipo"]);
-      $("mapHome").value    = pick(["home","local","equipo a","team a","player a"]);
-      $("mapAway").value    = pick(["away","visit","equipo b","team b","player b"]);
-      $("mapLine").value    = pick(["line","spread","total","hcap","hándicap","handicap"]);
-      $("mapOdds").value    = pick(["odds","cuota","precio","price","momio","american"]);
-      $("mapDate").value    = pick(["date","fecha","start","hora","time"]);
-      $("mapBook").value    = pick(["book","casa","sportsbook","house"]);
-      $("mapMatchId").value = pick(["id","match","game","event","ref"]);
+      const pick = (subs)=>{ const c=H.find(x=>subs.some(s=>x.l.includes(s))); return c?c.h:""; };
+      $("mapWinner").value = pick(["ganador","winner","pick","sele","seleccion","selection"]);
+      $("mapOdd").value    = pick(["odd","cuota","odds","price","momio","decimal","american"]);
+      $("mapType").value   = pick(["tipo","type","market","mercado","apuesta","resultado"]);
+      $("mapTeams").value  = pick(["equipos","match","game","partido","vs","encuentro","teams"]);
     }
-
-    function currentMapping(){
-      return {
-        sport: document.getElementById("mapSport").value || "",
-        market: document.getElementById("mapMarket").value || "",
-        home: document.getElementById("mapHome").value || "",
-        away: document.getElementById("mapAway").value || "",
-        line: document.getElementById("mapLine").value || "",
-        odds: document.getElementById("mapOdds").value || "",
-        date: document.getElementById("mapDate").value || "",
-        book: document.getElementById("mapBook").value || "",
-        matchId: document.getElementById("mapMatchId").value || ""
-      };
+    function normalizeOdds(v){
+      const s = (v ?? "").toString().trim().replace(",", ".");
+      if(!s) return null;
+      if(/^[+-]\d+(?:\.\d+)?$/.test(s)) return { type:"american", value: parseFloat(s) };
+      const num = Number(s); if(Number.isFinite(num)) return { type:"decimal", value: num };
+      return { type:"raw", value: (v ?? "").toString() };
     }
-
-    function saveMapping(){
-      if(!state.fileName || !state.sheet){ alert("Abre un archivo y hoja primero."); return; }
-      const key = "SBMAP::"+state.fileName+"::"+state.sheet;
-      const mapping = currentMapping();
-      try { localStorage.setItem(key, JSON.stringify(mapping)); alert("Mapping guardado."); } catch { alert("No se pudo guardar el mapping."); }
-    }
-    function tryLoadMapping(){
-      if(!state.fileName || !state.sheet) return;
-      const key = "SBMAP::"+state.fileName+"::"+state.sheet;
-      const raw = localStorage.getItem(key);
-      if(!raw) return;
-      try {
-        const m = JSON.parse(raw);
-        ["sport","market","home","away","line","odds","date","book","matchId"].forEach(k=>{
-          const el = document.getElementById("map"+k.charAt(0).toUpperCase()+k.slice(1));
-          if(el) el.value = m[k] || "";
-        });
-      } catch {}
-    }
-
-    function buildLines(){
-      if(!state.rows.length){ alert("Primero carga y lee una hoja."); return; }
-      const m = currentMapping();
-      const required = ["sport","market","home","away","odds"];
-      const missing = required.filter(k => !m[k]);
-      if(missing.length){ alert("Falta mapear: "+missing.join(", ")); return; }
-
-      const normalizeOdds = (v) => {
-        const s = (v ?? "").toString().trim();
-        if(!s) return null;
-        if(/^[+-]?\d+\.?\d*$/.test(s.replace(",","."))){
-          const num = parseFloat(s.replace(",","."));
-          if(s.startsWith("+") || s.startsWith("-")) return { type:"american", value:num };
-          if(num >= 1.01) return { type:"decimal", value:num };
-          return { type:"decimal", value:num };
+    function splitTeams(s){
+      if(!s) return { home:"", away:"", raw:"" };
+      const raw = s.toString();
+      const seps = [" vs ", " vs. ", " v ", " @ ", " - ", " — ", " – "];
+      for(const sep of seps){
+        if(raw.includes(sep)){
+          const [a,b] = raw.split(sep, 1);
+          return { home:(a||""+"").trim(), away:(b||""+"").trim(), raw:raw.trim() };
         }
-        return { type:"raw", value:s };
-      };
-
-      const lines = state.rows.map(r => ({
-        sport: r[m.sport] ?? "",
-        market: r[m.market] ?? "",
-        participants: { home: r[m.home] ?? "", away: r[m.away] ?? "" },
-        line: m.line ? (r[m.line] ?? "") : "",
-        odds: m.odds ? normalizeOdds(r[m.odds]) : null,
-        datetime: m.date ? (r[m.date] ?? "") : "",
-        book: m.book ? (r[m.book] ?? "") : "",
-        matchId: m.matchId ? (r[m.matchId] ?? "") : ""
-      }));
-
-      state.built = lines;
-      renderBuilt(lines);
+      }
+      const m = raw.split(/\s+(?:vs\.?|v|@|\-+|—|–)\s+/i);
+      if(m.length>=2) return { home:(m[0]||"").trim(), away:(m[1]||"").trim(), raw:raw.trim() };
+      return { home: raw.trim(), away: "", raw: raw.trim() };
     }
-
+    function inferSport(typeStr){
+      const t=(typeStr||"").toString().trim().toLowerCase();
+      if(t === "ganador") return "Tenis";
+      if(t.includes("resultado del partido") || (t.includes("resultado") && t.includes("partido"))) return "Fútbol";
+      return "";
+    }
+    function eqNorm(a,b){
+      return a.toString().trim().toLowerCase() === b.toString().trim().toLowerCase();
+    }
+    function validateWinner(sport, winner, home, away, typeStr){
+      if(!winner) return { valid:false, note:"Winner vacío" };
+      if(sport === "Fútbol"){
+        if(eqNorm(winner, "empate")) return { valid:true, note:"Empate válido" };
+        if(eqNorm(winner, home) || eqNorm(winner, away)) return { valid:true, note:"OK" };
+        return { valid:false, note:"Winner no coincide con equipos" };
+      }
+      if(sport === "Tenis"){
+        if(eqNorm(winner, home) || eqNorm(winner, away)) return { valid:true, note:"OK" };
+        return { valid:false, note:"Winner no coincide con jugadores" };
+      }
+      return { valid:true, note:"Deporte no inferido" };
+    }
+    function buildLines(){
+      const mw = $("mapWinner").value, mo=$("mapOdd").value, mt=$("mapType").value, me=$("mapTeams").value;
+      const miss=[]; if(!mw) miss.push("Ganador"); if(!mo) miss.push("Odd"); if(!mt) miss.push("Tipo"); if(!me) miss.push("Equipos");
+      if(miss.length){ alert("Falta mapear: "+miss.join(", ")); return; }
+      const validate = $("validateOn").checked;
+      const built = state.rows.map(r=>{
+        const winner=(r[mw]??"").toString();
+        const odd=normalizeOdds(r[mo]);
+        const type=(r[mt]??"").toString();
+        const sport=inferSport(type);
+        const teams=splitTeams(r[me]);
+        const val = validate ? validateWinner(sport, winner, teams.home, teams.away, type) : {valid:true, note:"(sin validar)"};
+        return { sport, winner, odd_type: odd?odd.type:"", odd_value: odd?odd.value:"", type, home: teams.home, away: teams.away, teamsRaw: teams.raw, valid: val.valid, note: val.note };
+      });
+      state.built=built;
+      renderBuilt(built);
+      const total=built.length, bad=built.filter(x=>!x.valid).length;
+      $("summary").textContent = `Construidas: ${total} • Inválidas: ${bad} • Válidas: ${total-bad}`;
+    }
     function renderBuilt(items){
-      const table = document.getElementById("builtTable"); table.innerHTML="";
-      document.getElementById("builtCount").textContent = (items ? items.length : 0).toString();
+      const table = $("builtTable"); table.innerHTML="";
+      $("builtCount").textContent = (items?items.length:0).toString();
       if(!items || !items.length) return;
-      const cols = ["sport","market","home","away","line","odds","datetime","book","matchId"];
+      const headers=["sport","winner","odd_type","odd_value","type","home","away","valid","note","teamsRaw"];
+      const pretty=["Deporte","Ganador","Odd(tipo)","Odd(valor)","Tipo","Home","Away","Válida","Nota","Equipos(raw)"];
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
-      cols.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
+      pretty.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
-      const tbody=document.createElement("tbody");
-      const MAX = 100;
+      const tbody=document.createElement("tbody"); const MAX=500;
       items.slice(0,MAX).forEach(it=>{
-        const tr=document.createElement("tr");
-        const vals = [
-          it.sport, it.market,
-          it.participants?.home ?? "", it.participants?.away ?? "",
-          it.line ?? "",
-          it.odds ? (it.odds.type+":"+it.odds.value) : "",
-          it.datetime ?? "", it.book ?? "", it.matchId ?? ""
-        ];
-        vals.forEach(v=>{ const td=document.createElement("td"); td.textContent=(v ?? ""); tr.appendChild(td); });
+        const tr=document.createElement("tr"); tr.className = it.valid?"good":"bad";
+        headers.forEach(k=>{ const td=document.createElement("td"); td.textContent=(it[k]??""); tr.appendChild(td); });
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
     }
-
     function exportJSON(){
-      const blob = new Blob([JSON.stringify(state.built, null, 2)], {type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines.json"; a.click(); URL.revokeObjectURL(a.href);
+      const blob=new Blob([JSON.stringify(state.built,null,2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_validated.json"; a.click(); URL.revokeObjectURL(a.href);
     }
-
     function exportCSV(){
-      if(!state.built.length){ alert("No hay líneas construidas."); return; }
-      const rows = [["sport","market","home","away","line","odds_type","odds_value","datetime","book","matchId"]];
-      state.built.forEach(it=>{
-        const o=it.odds||{type:"",value:""};
-        rows.push([it.sport,it.market,it.participants?.home ?? "",it.participants?.away ?? "",it.line??"",o.type,o.value,it.datetime??"",it.book??"",it.matchId??""]);
-      });
-      const csv = rows.map(r=>r.map(x=>('"'+String(x).replace(/"/g,'""')+'"')).join(",")).join("\n");
-      const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines.csv"; a.click(); URL.revokeObjectURL(a.href);
+      if(!state.built.length){ alert("No hay líneas."); return; }
+      const cols=["sport","winner","odd_type","odd_value","type","home","away","valid","note","teamsRaw"];
+      const head=cols.join(",")+"\n";
+      const rows=state.built.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n");
+      const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_validated.csv"; a.click(); URL.revokeObjectURL(a.href);
     }
-
-    function copyJSON(){
-      const text = JSON.stringify(state.built, null, 2);
-      navigator.clipboard.writeText(text).then(()=>{ alert("JSON copiado."); },()=>{ alert("No se pudo copiar automáticamente."); });
-    }
-
-    document.getElementById("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });
-    document.getElementById("dropzone").addEventListener("dragleave", e=>{ e.preventDefault(); e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300"); });
-    document.getElementById("dropzone").addEventListener("drop", handleDrop);
-    document.getElementById("fileInput").addEventListener("change", e=>{ if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]); });
-    document.getElementById("parseBtn").addEventListener("click", parseSheet);
-    document.getElementById("clearBtn").addEventListener("click", clearAll);
-    document.getElementById("autoMap").addEventListener("click", autoMap);
-    document.getElementById("saveMap").addEventListener("click", saveMapping);
-    document.getElementById("buildBtn").addEventListener("click", buildLines);
-    document.getElementById("exportJSON").addEventListener("click", exportJSON);
-    document.getElementById("exportCSV").addEventListener("click", exportCSV);
-    document.getElementById("copyJSON").addEventListener("click", copyJSON);
+    // Events
+    $("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });
+    $("dropzone").addEventListener("dragleave", e=>{ e.preventDefault(); e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300"); });
+    $("dropzone").addEventListener("drop", handleDrop);
+    $("fileInput").addEventListener("change", e=>{ if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]); });
+    $("parseBtn").addEventListener("click", parseSheet);
+    $("clearBtn").addEventListener("click", clearAll);
+    $("autoMap").addEventListener("click", autoMap);
+    $("buildBtn").addEventListener("click", buildLines);
+    $("exportJSON").addEventListener("click", exportJSON);
+    $("exportCSV").addEventListener("click", exportCSV);
   </script>
 
   <script src="../../assets/site.js"></script>

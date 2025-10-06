@@ -1,6 +1,6 @@
-/* Global navbar + footer injector — v1.5 */
+/* Global navbar + footer injector — v1.7 */
 window.Site = (function () {
-  const VERSION = "1.5.0";
+  const VERSION = "1.7.0";
   const REPO_NAME = "MMSports";
   function el(tag, attrs = {}, children = []) {
     const e = document.createElement(tag);
@@ -15,15 +15,15 @@ window.Site = (function () {
     }
     return e;
   }
+  function repoBase() {
+    try {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const idx = parts.indexOf(REPO_NAME);
+      if (idx >= 0) return '/' + parts.slice(0, idx + 1).join('/') + '/';
+    } catch (e) {}
+    return '/';
+  }
   function defaultItems() {
-    function repoBase() {
-      try {
-        const parts = window.location.pathname.split('/').filter(Boolean);
-        const idx = parts.indexOf(REPO_NAME);
-        if (idx >= 0) return '/' + parts.slice(0, idx + 1).join('/') + '/';
-      } catch (e) {}
-      return '/';
-    }
     const base = repoBase();
     return [
       { label: "Inicio", href: base },

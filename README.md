@@ -1,7 +1,3 @@
-# MMSports — Project Site (v1.5)
+# MMSports — Project Site (v1.7)
 
-Novedades:
-- **SportsBets**: cargar Excel/CSV, previsualizar y mapear columnas para líneas de apuesta.
-- Navbar y landing actualizadas.
-
-Publicación vía GitHub Pages con Actions (`.github/workflows/pages.yml`).
+SportsBets: inferencia de **deporte** por `Tipo` y **validación** de que el `winner` coincide con `home`/`away` (o 'Empate' en fútbol). Publicación vía GitHub Pages.
