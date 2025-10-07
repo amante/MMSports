@@ -29,7 +29,7 @@
       .card, .kpi { border-color:#ddd; }
     }
   
-    /* --- v1.22 UI polish --- */
+    /* --- v1.23 UI polish --- */
     table.ticket-table{ table-layout: fixed; }
     th, td{ font-size:13px }
     .num, .num-input{ text-align:right; font-variant-numeric: tabular-nums;
@@ -49,9 +49,7 @@
     th.col-valor, td.col-valor { width: 110px; }
     th.col-tipo, td.col-tipo { width: 100px; }
     th.col-factor, td.col-factor { width: 110px; }
-    th.col-home, td.col-home { width: 140px; }
-    th.col-away, td.col-away { width: 140px; }
-    th.col-res, td.col-res { width: 120px; }
+        th.col-res, td.col-res { width: 120px; }
     th.col-status, td.col-status { width: 90px; }
     th.col-actions, td.col-actions { width: 110px; }
     /* KPIs slightly larger */
@@ -438,11 +436,11 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
         tr.appendChild(tdText((it.umbral!=null && it.umbral!=="") ? it.umbral : "", "col-umbral num nowrap"));
         const tdVal=document.createElement("td"); tdVal.className="col-valor";
 
-        const inpVal=document.createElement("input"); inpVal.type="number"; inpVal.step="0.01"; inpVal.placeholder="valor"; inpVal.className="num-input rounded-lg border border-slate-200";
-        inpVal.value = (it.valor ?? ""); inpVal.addEventListener("input",(e)=>{ const nv = e.target.value; it.valor = nv === "" ? "" : Number(nv); autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdVal.appendChild(inpVal); tr.appendChild(tdVal);
+        const inpVal=document.createElement("input"); inpVal.type="text"; inpVal.placeholder="valor"; inpVal.className="num-input rounded-lg border border-slate-200";
+        inpVal.value = (it.valor ?? ""); inpVal.addEventListener("input",(e)=>{ const nv = e.target.value; it.valor = nv; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdVal.appendChild(inpVal); tr.appendChild(tdVal);
         const tdTipo=document.createElement("td"); tdTipo.className="col-tipo"; const sel=document.createElement("select"); sel.className="rounded-lg border border-slate-200 px-2 py-1.5"; ["over","under"].forEach(opt=>{ const o=document.createElement("option"); o.value=opt; o.textContent=opt.toUpperCase(); sel.appendChild(o); }); sel.value = (it.tipo && ["over","under"].includes(String(it.tipo).toLowerCase())) ? String(it.tipo).toLowerCase() : "over"; sel.addEventListener("change", ()=>{ it.tipo = sel.value; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdTipo.appendChild(sel); tr.appendChild(tdTipo);
         const tdFactor=document.createElement("td"); tdFactor.className="col-factor"; const inpF=document.createElement("input"); inpF.type="text"; inpF.placeholder="1.85 o +120"; inpF.className="num-input factor rounded-lg border border-slate-200"; inpF.value = (it.factor ?? ""); inpF.addEventListener("input",(e)=>{ const nv=e.target.value; const norm=normalizeOdds(nv); it.factor = norm ? norm.value : nv; computeTotalsForB(bi, key); computeEffectiveForB(bi, key); }); tdFactor.appendChild(inpF); tr.appendChild(tdFactor);
-        tr.appendChild(tdText(it.home, "col-home")); tr.appendChild(tdText(it.away, "col-away"));
+        
         const tdRes = document.createElement("td"); tdRes.className="col-res col-resultado";
         if(it.umbral!=null && it.umbral!==""){ const span = document.createElement("span"); span.textContent = it.resultado || ""; tdRes.appendChild(span); }
         else { const inp = document.createElement("input"); inp.type="text"; inp.placeholder="Ganado/Perdido"; inp.className="w-full rounded-lg border border-slate-200 p-1.5"; inp.value = it.resultado || ""; inp.addEventListener("input", (e)=>{ it.resultado = e.target.value; updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdRes.appendChild(inp); }
@@ -474,7 +472,7 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
       document.getElementById(kIdB(bi,key,"recalcBtn")).addEventListener("click", ()=>{ computeTotalsForB(bi, key); computeEffectiveForB(bi, key); });
       document.getElementById(kIdB(bi,key,"clearResultsBtn")).addEventListener("click", ()=>{ state.booklets[bi].ticket.lines.forEach(it=>{ it.valor=""; it.resultado=""; }); renderTabs(); });
       document.getElementById(kIdB(bi,key,"exportJSON")).addEventListener("click", ()=>{ const t=state.booklets[bi].ticket; const blob=new Blob([JSON.stringify(t.lines,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`cartilla_${bi+1}_${key}_lines.json`; a.click(); URL.revokeObjectURL(a.href); });
-      document.getElementById(kIdB(bi,key,"exportCSV")).addEventListener("click", ()=>{ const t=state.booklets[bi].ticket; const cols=["sport","winner","stat","umbral","valor","tipo","factor","home","away","resultado"]; const head=cols.join(",")+"\n"; const rows=t.lines.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n"); const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`cartilla_${bi+1}_${key}_lines.csv`; a.click(); URL.revokeObjectURL(a.href); });
+      document.getElementById(kIdB(bi,key,"exportCSV")).addEventListener("click", ()=>{ const t=state.booklets[bi].ticket; const cols=["sport","winner","stat","umbral","valor","tipo","factor","resultado"]; const head=cols.join(",")+"\n"; const rows=t.lines.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n"); const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`cartilla_${bi+1}_${key}_lines.csv`; a.click(); URL.revokeObjectURL(a.href); });
       applyHideCols();
       computeTotalsForB(bi, key); computeEffectiveForB(bi, key);
     }// Global events
