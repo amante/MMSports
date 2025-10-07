@@ -29,7 +29,7 @@
       .card, .kpi { border-color:#ddd; }
     }
   
-    /* --- v1.23 UI polish --- */
+    /* --- v1.23.1 UI polish --- */
     table.ticket-table{ table-layout: fixed; }
     th, td{ font-size:13px }
     .num, .num-input{ text-align:right; font-variant-numeric: tabular-nums;
@@ -340,8 +340,9 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
       else { const b=document.createElement("span"); b.className="badge badge-gray"; b.textContent="Pendiente"; td.appendChild(b); }
     }
     function autoEvalResult(it){
-      const u = Number(it.umbral);
-      const v = Number(it.valor);
+      const toNum = (val)=>{ const s=(val??"").toString().trim().replace(",","."); const n = Number(s); return Number.isFinite(n) ? n : NaN; };
+      const u = toNum(it.umbral);
+      const v = toNum(it.valor);
       if(Number.isFinite(u) && Number.isFinite(v)){
         const tipo = (it.tipo||"over").toString().toLowerCase();
         if(tipo === "under"){ it.resultado = (v < u) ? "Ganado" : "Perdido"; }
@@ -421,10 +422,10 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
       }
 
       const table = wrap.querySelector("#"+kIdB(bi,key,"table"));
-      const headers=["sport","winner","stat","umbral","valor","tipo","factor","home","away","resultado","_status","_actions"];
-      const pretty =["Sport","Winner","stat","umbral","valor","tipo","factor*","Home","Away","Resultado","Estado","Acciones"];
+      const headers=["sport","winner","stat","umbral","valor","tipo","factor","resultado","_status","_actions"];
+      const pretty =["Sport","Winner","stat","umbral","valor","tipo","factor*","Resultado","Estado","Acciones"];
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
-      pretty.forEach((c,ci)=>{ const th=document.createElement("th"); th.textContent=c; if(ci===9) th.classList.add("col-res"); if(ci===10) th.classList.add("col-status"); thr.appendChild(th); });
+      pretty.forEach((c,ci)=>{ const th=document.createElement("th"); th.textContent=c; if(ci===7) th.classList.add("col-res"); if(ci===8) th.classList.add("col-status"); thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
       const tbody=document.createElement("tbody");
       t.lines.forEach((it, idx)=>{
@@ -437,7 +438,7 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
         const tdVal=document.createElement("td"); tdVal.className="col-valor";
 
         const inpVal=document.createElement("input"); inpVal.type="text"; inpVal.placeholder="valor"; inpVal.className="num-input rounded-lg border border-slate-200";
-        inpVal.value = (it.valor ?? ""); inpVal.addEventListener("input",(e)=>{ const nv = e.target.value; it.valor = nv; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdVal.appendChild(inpVal); tr.appendChild(tdVal);
+        inpVal.value = (it.valor ?? ""); inpVal.addEventListener("input",(e)=>{ const nv = e.target.value; it.valor = nv === "" ? "" : Number(nv); autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdVal.appendChild(inpVal); tr.appendChild(tdVal);
         const tdTipo=document.createElement("td"); tdTipo.className="col-tipo"; const sel=document.createElement("select"); sel.className="rounded-lg border border-slate-200 px-2 py-1.5"; ["over","under"].forEach(opt=>{ const o=document.createElement("option"); o.value=opt; o.textContent=opt.toUpperCase(); sel.appendChild(o); }); sel.value = (it.tipo && ["over","under"].includes(String(it.tipo).toLowerCase())) ? String(it.tipo).toLowerCase() : "over"; sel.addEventListener("change", ()=>{ it.tipo = sel.value; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdTipo.appendChild(sel); tr.appendChild(tdTipo);
         const tdFactor=document.createElement("td"); tdFactor.className="col-factor"; const inpF=document.createElement("input"); inpF.type="text"; inpF.placeholder="1.85 o +120"; inpF.className="num-input factor rounded-lg border border-slate-200"; inpF.value = (it.factor ?? ""); inpF.addEventListener("input",(e)=>{ const nv=e.target.value; const norm=normalizeOdds(nv); it.factor = norm ? norm.value : nv; computeTotalsForB(bi, key); computeEffectiveForB(bi, key); }); tdFactor.appendChild(inpF); tr.appendChild(tdFactor);
         
