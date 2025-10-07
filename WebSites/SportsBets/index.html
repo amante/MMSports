@@ -28,6 +28,35 @@
       body { background:white; }
       .card, .kpi { border-color:#ddd; }
     }
+  
+    /* --- v1.22 UI polish --- */
+    table.ticket-table{ table-layout: fixed; }
+    th, td{ font-size:13px }
+    .num, .num-input{ text-align:right; font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .num-input{ padding:6px 8px; width: 10ch; }
+    .num-input.factor{ width: 9ch; } /* e.g., +120 or 1.85 */
+    .nowrap{ white-space: nowrap; }
+    /* Hide number spinners */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+    input[type=number]{ -moz-appearance: textfield; }
+    /* Column width plan */
+    th.col-sport, td.col-sport { width: 110px; }
+    th.col-winner, td.col-winner { width: 320px; }
+    th.col-stat, td.col-stat { width: 110px; }
+    th.col-umbral, td.col-umbral { width: 90px; }
+    th.col-valor, td.col-valor { width: 110px; }
+    th.col-tipo, td.col-tipo { width: 100px; }
+    th.col-factor, td.col-factor { width: 110px; }
+    th.col-home, td.col-home { width: 140px; }
+    th.col-away, td.col-away { width: 140px; }
+    th.col-res, td.col-res { width: 120px; }
+    th.col-status, td.col-status { width: 90px; }
+    th.col-actions, td.col-actions { width: 110px; }
+    /* KPIs slightly larger */
+    .kpi .v{ font-size: 14px; }
+
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -402,22 +431,25 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
       const tbody=document.createElement("tbody");
       t.lines.forEach((it, idx)=>{
         const tr=document.createElement("tr");
-        function tdText(v){ const td=document.createElement("td"); td.textContent=(v??""); return td; }
-        tr.appendChild(tdText(it.sport)); tr.appendChild(tdText(it.winner)); tr.appendChild(tdText(it.stat||""));
-        tr.appendChild(tdText((it.umbral!=null && it.umbral!=="") ? it.umbral : ""));
-        const tdVal=document.createElement("td");
-        const inpVal=document.createElement("input"); inpVal.type="number"; inpVal.step="0.01"; inpVal.placeholder="valor"; inpVal.className="w-full rounded-lg border border-slate-200 p-1.5";
+        function tdText(v, cls){ const td=document.createElement("td"); td.textContent=(v??""); if(cls) td.className = cls; return td; }
+        tr.appendChild(tdText(it.sport, "col-sport"));
+        tr.appendChild(tdText(it.winner, "col-winner"));
+        tr.appendChild(tdText(it.stat||"", "col-stat"));
+        tr.appendChild(tdText((it.umbral!=null && it.umbral!=="") ? it.umbral : "", "col-umbral num nowrap"));
+        const tdVal=document.createElement("td"); tdVal.className="col-valor";
+
+        const inpVal=document.createElement("input"); inpVal.type="number"; inpVal.step="0.01"; inpVal.placeholder="valor"; inpVal.className="num-input rounded-lg border border-slate-200";
         inpVal.value = (it.valor ?? ""); inpVal.addEventListener("input",(e)=>{ const nv = e.target.value; it.valor = nv === "" ? "" : Number(nv); autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdVal.appendChild(inpVal); tr.appendChild(tdVal);
-        const tdTipo=document.createElement("td"); const sel=document.createElement("select"); sel.className="w-full rounded-lg border border-slate-200 p-1.5"; ["over","under"].forEach(opt=>{ const o=document.createElement("option"); o.value=opt; o.textContent=opt.toUpperCase(); sel.appendChild(o); }); sel.value = (it.tipo && ["over","under"].includes(String(it.tipo).toLowerCase())) ? String(it.tipo).toLowerCase() : "over"; sel.addEventListener("change", ()=>{ it.tipo = sel.value; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdTipo.appendChild(sel); tr.appendChild(tdTipo);
-        const tdFactor=document.createElement("td"); const inpF=document.createElement("input"); inpF.type="text"; inpF.placeholder="1.85 o +120"; inpF.className="w-full rounded-lg border border-slate-200 p-1.5"; inpF.value = (it.factor ?? ""); inpF.addEventListener("input",(e)=>{ const nv=e.target.value; const norm=normalizeOdds(nv); it.factor = norm ? norm.value : nv; computeTotalsForB(bi, key); computeEffectiveForB(bi, key); }); tdFactor.appendChild(inpF); tr.appendChild(tdFactor);
-        tr.appendChild(tdText(it.home)); tr.appendChild(tdText(it.away));
-        const tdRes = document.createElement("td"); tdRes.className="col-res";
+        const tdTipo=document.createElement("td"); tdTipo.className="col-tipo"; const sel=document.createElement("select"); sel.className="rounded-lg border border-slate-200 px-2 py-1.5"; ["over","under"].forEach(opt=>{ const o=document.createElement("option"); o.value=opt; o.textContent=opt.toUpperCase(); sel.appendChild(o); }); sel.value = (it.tipo && ["over","under"].includes(String(it.tipo).toLowerCase())) ? String(it.tipo).toLowerCase() : "over"; sel.addEventListener("change", ()=>{ it.tipo = sel.value; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdTipo.appendChild(sel); tr.appendChild(tdTipo);
+        const tdFactor=document.createElement("td"); tdFactor.className="col-factor"; const inpF=document.createElement("input"); inpF.type="text"; inpF.placeholder="1.85 o +120"; inpF.className="num-input factor rounded-lg border border-slate-200"; inpF.value = (it.factor ?? ""); inpF.addEventListener("input",(e)=>{ const nv=e.target.value; const norm=normalizeOdds(nv); it.factor = norm ? norm.value : nv; computeTotalsForB(bi, key); computeEffectiveForB(bi, key); }); tdFactor.appendChild(inpF); tr.appendChild(tdFactor);
+        tr.appendChild(tdText(it.home, "col-home")); tr.appendChild(tdText(it.away, "col-away"));
+        const tdRes = document.createElement("td"); tdRes.className="col-res col-resultado";
         if(it.umbral!=null && it.umbral!==""){ const span = document.createElement("span"); span.textContent = it.resultado || ""; tdRes.appendChild(span); }
         else { const inp = document.createElement("input"); inp.type="text"; inp.placeholder="Ganado/Perdido"; inp.className="w-full rounded-lg border border-slate-200 p-1.5"; inp.value = it.resultado || ""; inp.addEventListener("input", (e)=>{ it.resultado = e.target.value; updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdRes.appendChild(inp); }
         tr.appendChild(tdRes);
-        const tdStatus=document.createElement("td"); tdStatus.className="col-status"; tdStatus.dataset.idx=idx; tr.appendChild(tdStatus);
+        const tdStatus=document.createElement("td"); tdStatus.className="col-status col-estado"; tdStatus.dataset.idx=idx; tr.appendChild(tdStatus);
         setRowBadge(tdStatus, it);
-        const tdAct=document.createElement("td"); const btnWin=document.createElement("button"); btnWin.className="btn"; btnWin.textContent="✓ Ganado"; btnWin.addEventListener("click", ()=>{ it.resultado="Ganado"; updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdAct.appendChild(btnWin); tr.appendChild(tdAct);
+        const tdAct=document.createElement("td"); tdAct.className="col-actions"; const btnWin=document.createElement("button"); btnWin.className="btn"; btnWin.textContent="✓ Ganado"; btnWin.addEventListener("click", ()=>{ it.resultado="Ganado"; updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdAct.appendChild(btnWin); tr.appendChild(tdAct);
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
