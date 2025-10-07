@@ -29,7 +29,7 @@
       .card, .kpi { border-color:#ddd; }
     }
   
-    /* --- v1.23.1 UI polish --- */
+    /* --- v1.24 UI polish --- */
     table.ticket-table{ table-layout: fixed; }
     th, td{ font-size:13px }
     .num, .num-input{ text-align:right; font-variant-numeric: tabular-nums;
@@ -65,47 +65,53 @@
       <div class="text-sm text-slate-500">v1.20</div>
     </div>
 
-    <section class="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div class="lg:col-span-2 space-y-6">
-        <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">1) Cargar archivo</h2>
-          <div id="dropzone" class="drop rounded-xl p-6 text-center bg-slate-50">
-            <p class="text-sm text-slate-600 mb-2">Arrastra y suelta aquí, o</p>
-            <label class="inline-block px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm cursor-pointer hover:bg-indigo-500">
-              Seleccionar archivo
-              <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
-            </label>
-            <p id="fileInfo" class="mt-2 text-xs text-slate-500">Sin archivo</p>
-          </div>
-          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label class="block text-sm font-medium mb-1">Hoja</label><select id="sheetSel" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
-            <div><label class="block text-sm font-medium mb-1">Fila inicial</label><input id="startRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" /></div>
-          </div>
-          <div class="mt-3 flex items-center gap-2">
-            <button id="parseBtn" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Leer</button>
-            <button id="clearBtn" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Limpiar</button>
-          </div>
+    
+<section class="mt-6 space-y-6">
+  <!-- Top toolbar: Carga de archivo + Modo impresión -->
+  <div class="card bg-white rounded-2xl p-5 border border-slate-200">
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Carga de archivo</h2>
+        <label class="flex items-center gap-2 text-sm">
+          <input id="hideResultsChk" type="checkbox" class="h-4 w-4">
+          Modo impresión (ocultar Resultado/Estado)
+        </label>
+      </div>
+      <div id="dropzone" class="drop rounded-xl p-6 text-center bg-slate-50">
+        <p class="text-sm text-slate-600 mb-2">Arrastra y suelta aquí, o</p>
+        <label class="inline-block px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm cursor-pointer hover:bg-indigo-500">
+          Seleccionar archivo
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+        </label>
+        <p id="fileInfo" class="mt-2 text-xs text-slate-500">Sin archivo</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-sm font-medium mb-1">Hoja</label>
+          <select id="sheetSel" class="w-full rounded-xl border border-slate-200 p-2.5"></select>
         </div>
-
-        <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">Impresión / columnas</h2>
-          <label class="flex items-center gap-2 text-sm">
-            <input id="hideResultsChk" type="checkbox" class="h-4 w-4"> Modo impresión (ocultar Resultado/Estado)
-          </label>
-          <div class="mt-3 text-xs text-slate-500">Las exportaciones JSON/CSV están en cada pestaña.</div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Fila inicial</label>
+          <input id="startRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" />
+        </div>
+        <div class="flex items-end gap-2">
+          <button id="parseBtn" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Leer</button>
+          <button id="clearBtn" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Limpiar</button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="lg:col-span-3 space-y-6">
-        <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold">Cartillas</h2>
-            <div class="tabs flex items-center gap-2" id="tabsNav"></div>
-          </div>
-          <div id="tabsContent"></div>
-        </div>
-      </div>
-    </section>
+  <!-- Cartillas -->
+  <div class="card bg-white rounded-2xl p-5 border border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">Cartillas</h2>
+      <div class="tabs flex items-center gap-2" id="tabsNav"></div>
+    </div>
+    <div id="tabsContent"></div>
+  </div>
+</section>
+
   </main>
   <div id="site-footer"></div>
 
@@ -485,22 +491,12 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
     document.getElementById("clearBtn").addEventListener("click", clearAll);
     document.getElementById("hideResultsChk").addEventListener("change", applyHideCols);
   </script>
-
-  <script src="../../assets/site.js"></script>
+<script src="../../assets/site.js"></script>
   <script>window.Site && window.Site.auto();</script>
 </body>
 </html>
-// Global events
-    document.getElementById("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });
-    document.getElementById("dropzone").addEventListener("dragleave", e=>{ e.preventDefault(); e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300"); });
-    document.getElementById("dropzone").addEventListener("drop", handleDrop);
-    document.getElementById("fileInput").addEventListener("change", e=>{ if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]); });
-    document.getElementById("parseBtn").addEventListener("click", parseSheet);
-    document.getElementById("clearBtn").addEventListener("click", clearAll);
-    document.getElementById("hideResultsChk").addEventListener("change", applyHideCols);
-  </script>
-
-  <script src="../../assets/site.js"></script>
+</script>
+<script src="../../assets/site.js"></script>
   <script>window.Site && window.Site.auto();</script>
 </body>
 </html>
