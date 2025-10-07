@@ -35,7 +35,7 @@
   <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Cartillas por deporte</h1>
-      <div class="text-sm text-slate-500">v1.17</div>
+      <div class="text-sm text-slate-500">v1.17.1</div>
     </div>
 
     <section class="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -103,7 +103,7 @@
       state.fileName=file.name; setFileInfo("Archivo: "+file.name+" ("+Math.round(file.size/1024)+" KB)");
       const reader=new FileReader();
       reader.onload = function(ev){
-        try{ const data=new Uint8Array(ev.target.result); state.wb = XLSX.read(data, { type:'array' }); populateSheets(); }
+        try{ const data=new Uint8Array(ev.target.result); state.wb = XLSX.read(data, { type:'array' }); populateSheets(); try{ parseSheet(); }catch(e){} }
         catch(err){ alert("No se pudo leer el archivo."); console.error(err); }
       };
       reader.readAsArrayBuffer(file);
@@ -296,7 +296,7 @@
 
       // If Mixta, render per-sport summary (count + ODD total)
       if (t.label === "Mixta" || key === "mixta") {
-        const container = document.getElementById(kId(key,"mixtaSummaryWrap"));
+        const container = wrap.querySelector("#"+kId(key,"mixtaSummaryWrap"));
         const map = new Map();
         t.lines.forEach(it => {
           const s = it.sport || "Otro";
@@ -324,7 +324,7 @@
         });
         tbl.appendChild(tbody);
         box.appendChild(tbl);
-        container.appendChild(box);
+        (container ? container.appendChild(box) : null);
       }
 
       // Render table

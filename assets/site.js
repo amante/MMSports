@@ -1,6 +1,6 @@
 /* Global navbar + footer injector — v1.13 */
 window.Site = (function () {
-  const VERSION = "1.17.0";
+  const VERSION = "1.17.1";
   const REPO_NAME = "MMSports";
   function el(tag, attrs = {}, children = []) {
     const e = document.createElement(tag);
