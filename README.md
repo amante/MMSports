@@ -1,3 +1,3 @@
-# MMSports — Project Site (v1.10)
+# MMSports — Project Site (v1.13)
 
-SportsBets con vista simplificada (Sport, Winner, factor, Home, Away) y parsing por bloques de 4 en Columna A.
+SportsBets: agrega botón "✓ Ganado" por fila, botón "Limpiar resultados" y selector de modo de pendientes (Pendientes=1 vs Parlay estricto=0).
