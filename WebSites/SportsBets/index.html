@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SportsBets — Cartilla</title>
+  <title>SportsBets — Cartillas por deporte y Mixta</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <meta name="description" content="Importa Excel en bloques de 4 (A1: Ganador, A2: Odd, A3: Tipo, A4: Partido). Muestra Sport, Winner, factor, Home, Away; calcula ODD total y retorno; permite marcar Ganado por fila, limpiar resultados y seleccionar el modo de pendientes." />
+  <meta name="description" content="Importa Excel por bloques de 4 (A1: Ganador, A2: Odd, A3: Tipo, A4: Partido). Arma cartillas por deporte y una pestaña Mixta cuando hay más de un deporte." />
   <style>
     .card{transition:box-shadow .2s ease, transform .2s ease}
     .card:hover{box-shadow:0 10px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
@@ -20,14 +20,22 @@
     .kpi{background:white;border:1px solid #e5e7eb;border-radius:14px;padding:10px 12px}
     .kpi .v{font-weight:600}
     .btn{border:1px solid #e5e7eb;border-radius:10px;padding:4px 8px;font-size:12px}
+    .tabs button.active{background:#0f172a;color:#fff}
+    .hide-rs th.col-res, .hide-rs td.col-res,
+    .hide-rs th.col-status, .hide-rs td.col-status { display: none; }
+    @media print {
+      #site-navbar, #dropzone, #parseBtn, #clearBtn, #exportJSONGlobal, #exportCSVGlobal, #hideResultsChk { display:none !important; }
+      body { background:white; }
+      .card, .kpi { border-color:#ddd; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="site-navbar"></div>
   <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Cartilla</h1>
-      <div class="text-sm text-slate-500">v1.13</div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Cartillas por deporte</h1>
+      <div class="text-sm text-slate-500">v1.17</div>
     </div>
 
     <section class="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -53,52 +61,21 @@
         </div>
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">2) Parámetros</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-            <div>
-              <label class="block text-sm font-medium mb-1">Monto (stake)</label>
-              <input id="stake" type="number" min="0" step="0.01" value="10" class="w-full rounded-xl border border-slate-200 p-2.5" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1">Modo de pendientes</label>
-              <select id="pendingMode" class="w-full rounded-xl border border-slate-200 p-2.5">
-                <option value="ignore1">Pendientes = 1 (retorno parcial por ganadas)</option>
-                <option value="strict0">Parlay estricto (pendientes = 0)</option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-3 flex items-center gap-2">
-            <button id="buildBtn" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Construir</button>
-            <button id="clearResultsBtn" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Limpiar resultados</button>
-          </div>
-          <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div class="kpi">ODD total (decimal): <span id="oddTotal" class="v">—</span></div>
-            <div class="kpi">Retorno potencial: <span id="retorno" class="v">—</span></div>
-            <div class="kpi">Ganancia neta: <span id="ganancia" class="v">—</span></div>
-            <div class="kpi">Estado cartilla: <span id="ticketStatus" class="v">—</span></div>
-            <div class="kpi">Retorno efectivo: <span id="retornoEfectivo" class="v">—</span></div>
-            <div class="kpi">Ganancia neta efectiva: <span id="gananciaEfectiva" class="v">—</span></div>
-          </div>
-        </div>
-
-        <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">Exportar</h2>
-          <div class="flex items-center gap-2">
-            <button id="exportJSON" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Descargar JSON</button>
-            <button id="exportCSV" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Descargar CSV</button>
-          </div>
+          <h2 class="text-lg font-semibold mb-3">Impresión / columnas</h2>
+          <label class="flex items-center gap-2 text-sm">
+            <input id="hideResultsChk" type="checkbox" class="h-4 w-4"> Modo impresión (ocultar Resultado/Estado)
+          </label>
+          <div class="mt-3 text-xs text-slate-500">Las exportaciones JSON/CSV están disponibles dentro de cada pestaña.</div>
         </div>
       </div>
 
       <div class="lg:col-span-3 space-y-6">
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Líneas</h2>
-            <div class="text-xs text-slate-500"><span id="builtCount">0</span> elementos</div>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">Cartillas</h2>
+            <div class="tabs flex items-center gap-2" id="tabsNav"></div>
           </div>
-          <div class="overflow-auto rounded-xl border border-slate-200">
-            <table id="builtTable"></table>
-          </div>
+          <div id="tabsContent"></div>
         </div>
       </div>
     </section>
@@ -107,14 +84,14 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const state = { wb:null, fileName:null, linesA:[], built:[], sheet:null };
+    const state = { wb:null, fileName:null, linesA:[], built:[], sheet:null, tickets:{}, active:null };
 
+    function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'mixta'; }
     function setFileInfo(txt){ $("fileInfo").textContent = txt; }
     function clearAll(){
-      state.wb=null; state.fileName=null; state.linesA=[]; state.built=[]; state.sheet=null;
-      $("sheetSel").innerHTML = ""; 
-      ["oddTotal","retorno","ganancia","ticketStatus","retornoEfectivo","gananciaEfectiva"].forEach(id=>$(id).textContent="—");
-      renderBuilt([]);
+      state.wb=null; state.fileName=null; state.linesA=[]; state.built=[]; state.sheet=null; state.tickets={}; state.active=null;
+      $("sheetSel").innerHTML = ""; setFileInfo("Sin archivo");
+      $("tabsNav").innerHTML = ""; $("tabsContent").innerHTML="";
     }
     function handleDrop(e){
       e.preventDefault(); e.stopPropagation();
@@ -123,9 +100,7 @@
       e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300");
     }
     function loadFile(file){
-      state.fileName=file.name; 
-      const info = "Archivo: "+file.name+" ("+Math.round(file.size/1024)+" KB)";
-      const node = document.getElementById("fileInfo"); if(node) node.textContent = info;
+      state.fileName=file.name; setFileInfo("Archivo: "+file.name+" ("+Math.round(file.size/1024)+" KB)");
       const reader=new FileReader();
       reader.onload = function(ev){
         try{ const data=new Uint8Array(ev.target.result); state.wb = XLSX.read(data, { type:'array' }); populateSheets(); }
@@ -144,15 +119,11 @@
       if(!sheetName){ alert("No hay hojas."); return; }
       const ws = state.wb.Sheets[sheetName];
       const arr = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:"" });
+      const start = Math.max(1, parseInt($("startRow").value||"1",10)) - 1;
       const lines = [];
-      for(let i=0;i<arr.length;i++){
-        const row = arr[i];
-        const val = row && row.length ? String(row[0] ?? "").trim() : "";
-        lines.push(val);
-      }
-      state.sheet = sheetName;
-      state.linesA = lines;
-      buildLines();
+      for(let i=0;i<arr.length;i++){ const row = arr[i]; const val = row && row.length ? String(row[0] ?? "").trim() : ""; lines.push(val); }
+      state.sheet = sheetName; state.linesA = lines;
+      buildLines(start);
     }
     function normalizeOdds(v){
       const s = (v ?? "").toString().trim().replace(",", ".");
@@ -164,18 +135,14 @@
     function toDecimalFactor(f){
       const x = Number(f);
       if(!Number.isFinite(x)) return null;
-      if(Math.abs(x) >= 100 || x <= -100 || x >= 100){
-        if(x > 0) return 1 + (x/100);
-        if(x < 0) return 1 + (100/Math.abs(x));
-      }
-      if(x >= 1.01) return x;
-      return null;
+      if(Math.abs(x) >= 100 || x <= -100 || x >= 100){ if(x > 0) return 1 + (x/100); if(x < 0) return 1 + (100/Math.abs(x)); }
+      if(x >= 1.01) return x; return null;
     }
     function splitTeams(raw){
       if(!raw) return {home:"",away:""};
       const s = raw.toString();
       const seps = [" vs ", " vs. ", " v ", " @ ", " - ", " — ", " – "];
-      for(const sep of seps){ if(s.includes(sep)){ const parts=s.split(sep); if(parts.length>=2){ return {home:(parts[0]||"").trim(), away:(parts[1]||"").trim()}; } } }
+      for(const sep of seps){ if(s.includes(sep)){ const parts=s.split(sep); if(parts.length>=2) return {home:(parts[0]||"").trim(), away:(parts[1]||"").trim()}; } }
       const m = s.split(/\s+(?:vs\.?|v|@|\-+|—|–)\s+/i);
       if(m.length>=2) return {home:(m[0]||"").trim(), away:(m[1]||"").trim()};
       return {home:s.trim(), away:""};
@@ -184,113 +151,195 @@
       const t=(typeStr||"").toString().trim().toLowerCase();
       if(t === "ganador") return "Tenis";
       if(t.includes("resultado del partido") || (t.includes("resultado") && t.includes("partido"))) return "Fútbol";
-      return "";
+      return t || "Otro";
     }
-    function buildLines(){
-      const arr = state.linesA;
-      const built = [];
-      for(let i=0; i < arr.length; i += 4){
-        const a1 = arr[i]     || ""; // Ganador
-        const a2 = arr[i+1]   || ""; // Odd
-        const a3 = arr[i+2]   || ""; // Tipo
-        const a4 = arr[i+3]   || ""; // Partido
+    function buildLines(startIdx=0){
+      const arr = state.linesA; const built = [];
+      for(let i=startIdx; i < arr.length; i += 4){
+        const a1 = arr[i]||""; const a2 = arr[i+1]||""; const a3 = arr[i+2]||""; const a4 = arr[i+3]||"";
         if(!a1 && !a2 && !a3 && !a4) continue;
-        const sport = inferSport(a3);
-        const teams = splitTeams(a4);
-        const odd = normalizeOdds(a2);
-        built.push({ sport, winner: a1, factor: odd?odd.value:"", home: teams.home, away: teams.away, resultado: "" });
+        const sport = inferSport(a3); const teams = splitTeams(a4); const odd = normalizeOdds(a2);
+        built.push({ sport, winner:a1, factor: odd?odd.value:"", home:teams.home, away:teams.away, resultado:"" });
       }
       state.built = built;
-      renderBuilt(built);
-      computeTotals();
-      computeEffective();
+      buildTickets();
+      renderTabs();
     }
-    function computeTotals(){
-      const stake = Number($("stake").value || 0);
-      let prod = 1.0; let count=0;
-      for(const it of state.built){
-        const dec = toDecimalFactor(it.factor);
-        if(dec && dec>0){ prod *= dec; count++; }
+
+    
+    function buildTickets(){
+      const sports = Array.from(new Set(state.built.map(b=>b.sport || "Otro")));
+      const tickets = {};
+      if(sports.length > 1){
+        // MULTI-SPORT: show ONLY Mixta tab
+        tickets["mixta"] = { key:"mixta", label:"Mixta", stake:10, pendingMode:"ignore1", lines: state.built.map(x=>Object.assign({},x)) };
+      }else{
+        // SINGLE SPORT: show ONLY that sport (Fútbol, Tenis, …); NO Mixta tab
+        const s = sports[0] || "Otro";
+        const key = slug(s);
+        tickets[key] = { key, label:s, stake:10, pendingMode:"ignore1", lines: state.built.filter(x=>x.sport===s).map(x=>Object.assign({},x)) };
       }
-      const oddTotal = (count>0) ? prod : 0;
-      const retorno = oddTotal * stake;
-      const ganancia = retorno - stake;
-      $("oddTotal").textContent = (oddTotal? oddTotal.toFixed(4) : "—");
-      $("retorno").textContent = (oddTotal? retorno.toFixed(2) : "—");
-      $("ganancia").textContent = (oddTotal? ganancia.toFixed(2) : "—");
+      state.tickets = tickets;
+      state.active = Object.keys(tickets)[0] || null;
     }
+
     function classifyResult(v){
       const s = (v||"").toString().trim().toLowerCase();
       const noAcc = s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
-      const winSet = new Set(["ganado","ganada","win","won","ok","si","sí","yes","true"]);
-      const loseSet = new Set(["perdido","perdida","lose","lost","no","fail","false"]);
-      const pendSet = new Set(["pendiente","pending","-","—","en curso","running"]);
-      const s2 = noAcc;
-      if(winSet.has(s2)) return "ganado";
-      if(loseSet.has(s2)) return "perdido";
-      if(!s2 || pendSet.has(s2)) return "pendiente";
+      const win = new Set(["ganado","ganada","win","won","ok","si","sí","yes","true"]);
+      const lose = new Set(["perdido","perdida","lose","lost","no","fail","false"]);
+      const pend = new Set(["pendiente","pending","-","—","en curso","running"]);
+      if(win.has(noAcc)) return "ganado";
+      if(lose.has(noAcc)) return "perdido";
+      if(!noAcc || pend.has(noAcc)) return "pendiente";
       return "pendiente";
     }
-    function computeEffective(){
-      const stake = Number($("stake").value || 0);
-      const mode = $("pendingMode").value; // 'ignore1' or 'strict0'
-      let hasLost=false, allWon=true, hasPending=false;
-      let prodWins = 1.0; let wins=0;
-      for(const it of state.built){
+
+    function kId(key, suffix){ return key+"-"+suffix; }
+
+    function computeTotalsFor(key){
+      const t = state.tickets[key]; if(!t) return;
+      let prod=1.0, count=0;
+      for(const it of t.lines){ const dec=toDecimalFactor(it.factor); if(dec && dec>0){ prod*=dec; count++; } }
+      const stake = Number((document.getElementById(kId(key,"stake")).value)||0);
+      const oddTotal = (count>0) ? prod : 0;
+      const retorno = oddTotal * stake; const ganancia = retorno - stake;
+      document.getElementById(kId(key,"oddTotal")).textContent = (oddTotal? oddTotal.toFixed(4) : "—");
+      document.getElementById(kId(key,"retorno")).textContent = (oddTotal? retorno.toFixed(2) : "—");
+      document.getElementById(kId(key,"ganancia")).textContent = (oddTotal? ganancia.toFixed(2) : "—");
+    }
+
+    function computeEffectiveFor(key){
+      const t = state.tickets[key]; if(!t) return;
+      const stake = Number((document.getElementById(kId(key,"stake")).value)||0);
+      const mode = document.getElementById(kId(key,"pendingMode")).value;
+      let hasLost=false, allWon=true;
+      let prodWins=1.0, wins=0;
+      for(const it of t.lines){
         const cls = classifyResult(it.resultado);
         if(cls === "perdido") hasLost = true;
         if(cls !== "ganado") allWon = false;
-        if(cls === "pendiente") hasPending = true;
-        if(cls === "ganado"){
-          const dec = toDecimalFactor(it.factor);
-          if(dec && dec>0){ prodWins *= dec; wins++; }
-        }
+        if(cls === "ganado"){ const dec=toDecimalFactor(it.factor); if(dec && dec>0){ prodWins*=dec; wins++; } }
       }
-      let status = "Pendiente";
-      let retornoEf = 0, ganEf = 0, showNums=false;
-      if(hasLost){
-        status = "Perdida"; retornoEf = 0; showNums = true; ganEf = -stake;
-      }else if(allWon && wins>0){
-        status = "Ganada"; retornoEf = prodWins * stake; showNums = true; ganEf = retornoEf - stake;
-      }else{
-        status = "Pendiente";
-        if(mode === "ignore1"){
-          // Solo multiplicamos ganadas; pendientes cuentan como 1
-          retornoEf = wins>0 ? (prodWins * stake) : 0;
-          showNums = wins>0;
-          ganEf = showNums ? (retornoEf - stake) : 0;
-        }else{
-          // strict0: pendientes = 0 → retorno 0 hasta resolver
-          retornoEf = 0; showNums = False;
-          ganEf = 0;
-        }
+      let status="Pendiente", retornoEf=0, ganEf=0, show=false;
+      if(hasLost){ status="Perdida"; retornoEf=0; show=true; ganEf=-stake; }
+      else if(allWon && wins>0){ status="Ganada"; retornoEf=prodWins*stake; show=true; ganEf=retornoEf-stake; }
+      else {
+        status="Pendiente";
+        if(mode==="ignore1"){ retornoEf= wins>0 ? prodWins*stake : 0; show = wins>0; ganEf = show ? (retornoEf-stake) : 0; }
+        else { retornoEf=0; show=false; ganEf=0; }
       }
-      $("ticketStatus").textContent = status;
-      $("retornoEfectivo").textContent = showNums ? retornoEf.toFixed(2) : "—";
-      $("gananciaEfectiva").textContent = showNums ? (ganEf.toFixed(2)) : "—";
+      document.getElementById(kId(key,"ticketStatus")).textContent = status;
+      document.getElementById(kId(key,"retornoEfectivo")).textContent = show? retornoEf.toFixed(2) : "—";
+      document.getElementById(kId(key,"gananciaEfectiva")).textContent = show? ganEf.toFixed(2) : "—";
     }
-    function tableStatusBadge(td, it){
-      td.innerHTML = "";
+
+    function applyHideCols(){
+      const chk = document.getElementById("hideResultsChk");
+      const tables = document.querySelectorAll("table.ticket-table");
+      tables.forEach(tbl=>{ if(chk && chk.checked) tbl.classList.add("hide-rs"); else tbl.classList.remove("hide-rs"); });
+    }
+
+    function setRowBadge(td, it){
+      td.innerHTML="";
       const cls = classifyResult(it.resultado);
-      if(cls === "ganado"){
-        const b=document.createElement("span"); b.className="badge badge-green"; b.textContent="Ganado"; td.appendChild(b);
-      }else if(cls === "perdido"){
-        const b=document.createElement("span"); b.className="badge badge-red"; b.textContent="Perdido"; td.appendChild(b);
-      }else{
-        const b=document.createElement("span"); b.className="badge badge-gray"; b.textContent="Pendiente"; td.appendChild(b);
-      }
+      if(cls === "ganado"){ const b=document.createElement("span"); b.className="badge badge-green"; b.textContent="Ganado"; td.appendChild(b); }
+      else if(cls === "perdido"){ const b=document.createElement("span"); b.className="badge badge-red"; b.textContent="Perdido"; td.appendChild(b); }
+      else { const b=document.createElement("span"); b.className="badge badge-gray"; b.textContent="Pendiente"; td.appendChild(b); }
     }
-    function renderBuilt(items){
-      const table = $("builtTable"); table.innerHTML="";
-      $("builtCount").textContent = (items?items.length:0).toString();
-      if(!items || !items.length) return;
+    function updateRowStatus(key, idx){
+      const table = document.getElementById(kId(key,"table"));
+      const tdList = table.querySelectorAll("tbody tr td.col-status");
+      const t = state.tickets[key]; const it = t.lines[idx];
+      const td = tdList[idx]; if(td) setRowBadge(td, it);
+    }
+
+    function renderTicketContent(key){
+      const t = state.tickets[key];
+      const wrap = document.createElement("div"); wrap.id = kId(key,"content");
+      wrap.innerHTML = `
+        <div class="grid grid-cols-1 gap-4">
+          <div class="kpi">Deporte: <span class="v">${t.label}</span></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+            <div>
+              <label class="block text-sm font-medium mb-1">Monto (stake)</label>
+              <input id="${kId(key,"stake")}" type="number" min="0" step="0.01" value="10" class="w-full rounded-xl border border-slate-200 p-2.5" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Modo de pendientes</label>
+              <select id="${kId(key,"pendingMode")}" class="w-full rounded-xl border border-slate-200 p-2.5">
+                <option value="ignore1">Pendientes = 1 (retorno parcial)</option>
+                <option value="strict0">Parlay estricto (pendientes = 0)</option>
+              </select>
+            </div>
+          </div>
+          <div id="${kId(key,"mixtaSummaryWrap")}" class="mt-2"></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+            <div class="kpi">ODD total: <span id="${kId(key,"oddTotal")}" class="v">—</span></div>
+            <div class="kpi">Retorno potencial: <span id="${kId(key,"retorno")}" class="v">—</span></div>
+            <div class="kpi">Ganancia neta: <span id="${kId(key,"ganancia")}" class="v">—</span></div>
+            <div class="kpi">Estado cartilla: <span id="${kId(key,"ticketStatus")}" class="v">—</span></div>
+            <div class="kpi">Retorno efectivo: <span id="${kId(key,"retornoEfectivo")}" class="v">—</span></div>
+            <div class="kpi">Ganancia efectiva: <span id="${kId(key,"gananciaEfectiva")}" class="v">—</span></div>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <button id="${kId(key,"recalcBtn")}" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Recalcular</button>
+            <button id="${kId(key,"clearResultsBtn")}" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Limpiar resultados</button>
+            <button id="${kId(key,"exportJSON")}" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">JSON</button>
+            <button id="${kId(key,"exportCSV")}" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">CSV</button>
+          </div>
+          <div class="overflow-auto rounded-xl border border-slate-200 mt-2">
+            <table id="${kId(key,"table")}" class="ticket-table"></table>
+          </div>
+        </div>
+      `;
+
+      // If Mixta, render per-sport summary (count + ODD total)
+      if (t.label === "Mixta" || key === "mixta") {
+        const container = document.getElementById(kId(key,"mixtaSummaryWrap"));
+        const map = new Map();
+        t.lines.forEach(it => {
+          const s = it.sport || "Otro";
+          const dec = toDecimalFactor(it.factor);
+          const cur = map.get(s) || {count:0, prod:1.0, any:false};
+          if (dec && dec>0) { cur.prod *= dec; cur.any = true; }
+          cur.count += 1;
+          map.set(s, cur);
+        });
+        const box = document.createElement("div");
+        box.className = "overflow-auto rounded-xl border border-slate-200";
+        const tbl = document.createElement("table");
+        const thead = document.createElement("thead");
+        const thr = document.createElement("tr");
+        ["Deporte","Líneas","ODD total (decimal)"].forEach(h=>{ const th=document.createElement("th"); th.textContent=h; thr.appendChild(th); });
+        thead.appendChild(thr); tbl.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        Array.from(map.entries()).forEach(([sport, info]) => {
+          const tr = document.createElement("tr");
+          function td(v){ const td=document.createElement("td"); td.textContent=v; return td; }
+          tr.appendChild(td(sport));
+          tr.appendChild(td(String(info.count)));
+          tr.appendChild(td(info.any ? info.prod.toFixed(4) : "—"));
+          tbody.appendChild(tr);
+        });
+        tbl.appendChild(tbody);
+        box.appendChild(tbl);
+        container.appendChild(box);
+      }
+
+      // Render table
+      const table = wrap.querySelector("#"+kId(key,"table"));
       const headers=["sport","winner","factor","home","away","resultado","_status","_actions"];
       const pretty =["Sport","Winner","factor","Home","Away","Resultado","Estado","Acciones"];
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
-      pretty.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
+      pretty.forEach((c,ci)=>{
+        const th=document.createElement("th"); th.textContent=c;
+        if(ci===5) th.classList.add("col-res"); if(ci===6) th.classList.add("col-status");
+        thr.appendChild(th);
+      });
       thead.appendChild(thr); table.appendChild(thead);
       const tbody=document.createElement("tbody");
-      items.forEach((it, idx)=>{
+      t.lines.forEach((it, idx)=>{
         const tr=document.createElement("tr");
         function tdText(v){ const td=document.createElement("td"); td.textContent=(v??""); return td; }
         tr.appendChild(tdText(it.sport));
@@ -298,60 +347,58 @@
         tr.appendChild(tdText(it.factor));
         tr.appendChild(tdText(it.home));
         tr.appendChild(tdText(it.away));
-        // Resultado input
-        const tdRes = document.createElement("td");
-        const inp = document.createElement("input"); inp.type="text"; inp.placeholder="Ganado/Perdido"; inp.className="w-full rounded-lg border border-slate-200 p-1.5";
-        inp.value = it.resultado || "";
-        inp.addEventListener("input", (e)=>{ it.resultado = e.target.value; updateStatus(idx); computeEffective(); });
+        const tdRes=document.createElement("td"); tdRes.className="col-res";
+        const inp=document.createElement("input"); inp.type="text"; inp.placeholder="Ganado/Perdido"; inp.className="w-full rounded-lg border border-slate-200 p-1.5";
+        inp.value = it.resultado||"";
+        inp.addEventListener("input", (e)=>{ it.resultado=e.target.value; updateRowStatus(key, idx); computeEffectiveFor(key); });
         tdRes.appendChild(inp); tr.appendChild(tdRes);
-        // Status badge
-        const tdStatus = document.createElement("td"); tdStatus.dataset.idx = idx; tr.appendChild(tdStatus);
-        tableStatusBadge(tdStatus, it);
-        // Acciones
-        const tdAct = document.createElement("td");
-        const btnWin = document.createElement("button"); btnWin.className="btn"; btnWin.textContent = "✓ Ganado";
-        btnWin.addEventListener("click", ()=>{ it.resultado = "Ganado"; // force update input too
-          inp.value = it.resultado; updateStatus(idx); computeEffective(); });
-        tdAct.appendChild(btnWin);
-        tr.appendChild(tdAct);
+        const tdStatus=document.createElement("td"); tdStatus.className="col-status"; tdStatus.dataset.idx=idx; tr.appendChild(tdStatus);
+        setRowBadge(tdStatus, it);
+        const tdAct=document.createElement("td");
+        const btnWin=document.createElement("button"); btnWin.className="btn"; btnWin.textContent="✓ Ganado";
+        btnWin.addEventListener("click", ()=>{ it.resultado="Ganado"; inp.value=it.resultado; updateRowStatus(key, idx); computeEffectiveFor(key); });
+        tdAct.appendChild(btnWin); tr.appendChild(tdAct);
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
+      return wrap;
     }
-    function updateStatus(idx){
-      const tdList = document.querySelectorAll("#builtTable tbody tr td:nth-child(7)"); // Estado column
-      const it = state.built[idx];
-      const td = tdList[idx];
-      if(td) tableStatusBadge(td, it);
+
+    function renderTabs(){
+      const nav = $("tabsNav"); const content = $("tabsContent");
+      nav.innerHTML=""; content.innerHTML="";
+      const keys = Object.keys(state.tickets);
+      if(!keys.length){ content.innerHTML='<div class="text-sm text-slate-500">Carga un archivo para generar cartillas.</div>'; return; }
+      keys.forEach(key=>{
+        const t = state.tickets[key];
+        const btn=document.createElement("button"); btn.className="px-3 py-1.5 rounded-lg"; btn.textContent=t.label;
+        if(state.active===key) btn.classList.add("active");
+        btn.addEventListener("click", ()=>{ state.active=key; renderTabs(); });
+        nav.appendChild(btn);
+      });
+      const activeKey = state.active || keys[0];
+      const node = renderTicketContent(activeKey);
+      content.appendChild(node);
+
+      // Wire events for active ticket
+      document.getElementById(kId(activeKey,"stake")).addEventListener("input", ()=>{ computeTotalsFor(activeKey); computeEffectiveFor(activeKey); });
+      document.getElementById(kId(activeKey,"pendingMode")).addEventListener("change", ()=>{ computeEffectiveFor(activeKey); });
+      document.getElementById(kId(activeKey,"recalcBtn")).addEventListener("click", ()=>{ computeTotalsFor(activeKey); computeEffectiveFor(activeKey); });
+      document.getElementById(kId(activeKey,"clearResultsBtn")).addEventListener("click", ()=>{ state.tickets[activeKey].lines.forEach(it=>it.resultado=""); renderTabs(); });
+      document.getElementById(kId(activeKey,"exportJSON")).addEventListener("click", ()=>{ const t=state.tickets[activeKey]; const blob=new Blob([JSON.stringify(t.lines,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=activeKey+"_lines.json"; a.click(); URL.revokeObjectURL(a.href); });
+      document.getElementById(kId(activeKey,"exportCSV")).addEventListener("click", ()=>{ const t=state.tickets[activeKey]; const cols=["sport","winner","factor","home","away","resultado"]; const head=cols.join(",")+"\n"; const rows=t.lines.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n"); const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=activeKey+"_lines.csv"; a.click(); URL.revokeObjectURL(a.href); });
+      applyHideCols();
+      computeTotalsFor(activeKey); computeEffectiveFor(activeKey);
     }
-    function clearResults(){
-      for(const it of state.built){ it.resultado = ""; }
-      renderBuilt(state.built);
-      computeEffective();
-    }
-    function exportJSON(){
-      const blob=new Blob([JSON.stringify(state.built,null,2)],{type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_with_results.json"; a.click(); URL.revokeObjectURL(a.href);
-    }
-    function exportCSV(){
-      if(!state.built.length){ alert("No hay líneas."); return; }
-      const cols=["sport","winner","factor","home","away","resultado"];
-      const head=cols.join(",")+"\n";
-      const rows=state.built.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n");
-      const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_with_results.csv"; a.click(); URL.revokeObjectURL(a.href);
-    }
-    // Events
-    $("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });
-    $("dropzone").addEventListener("dragleave", e=>{ e.preventDefault(); e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300"); });
-    $("dropzone").addEventListener("drop", handleDrop);
-    $("fileInput").addEventListener("change", e=>{ if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]); });
-    $("parseBtn").addEventListener("click", parseSheet);
-    $("clearBtn").addEventListener("click", clearAll);
-    $("buildBtn").addEventListener("click", ()=>{ buildLines(); computeTotals(); computeEffective(); });
-    $("stake").addEventListener("input", ()=>{ computeTotals(); computeEffective(); });
-    $("pendingMode").addEventListener("change", computeEffective);
-    $("clearResultsBtn").addEventListener("click", clearResults);
+
+    // Global events
+    document.getElementById("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });
+    document.getElementById("dropzone").addEventListener("dragleave", e=>{ e.preventDefault(); e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300"); });
+    document.getElementById("dropzone").addEventListener("drop", handleDrop);
+    document.getElementById("fileInput").addEventListener("change", e=>{ if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]); });
+    document.getElementById("parseBtn").addEventListener("click", parseSheet);
+    document.getElementById("clearBtn").addEventListener("click", clearAll);
+    document.getElementById("hideResultsChk").addEventListener("change", applyHideCols);
   </script>
 
   <script src="../../assets/site.js"></script>
