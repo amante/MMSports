@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SportsBets — Columna A (“apuesta”)</title>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SportsBets — Vista simplificada</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <meta name="description" content="Lee Excel donde la columna A se llama 'apuesta' y contiene toda la línea; filas 2..N son datos." />
+  <meta name="description" content="Lee Excel en bloques de 4 (A1 Ganador, A2 Odd, A3 Tipo, A4 Partido) y muestra solo Sport, Winner, factor, Home, Away." />
   <style>
     .card{transition:box-shadow .2s ease, transform .2s ease}
     .card:hover{box-shadow:0 10px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
@@ -14,17 +13,16 @@
     table{border-collapse: separate; border-spacing: 0; min-width: 100%}
     th, td{border-bottom:1px solid #e5e7eb; padding:6px 10px; text-align:left; font-size:12px}
     th{position: sticky; top:0; background:#f8fafc; z-index:1}
-    .bad{background:#fff7ed} .good{background:#f0fdf4}
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="site-navbar"></div>
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Columna A</h1>
-      <div class="text-sm text-slate-500">v1.8</div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">SportsBets — Simplificado</h1>
+      <div class="text-sm text-slate-500">v1.10</div>
     </div>
-    <p class="mt-2 text-slate-600">Formato esperado: <span class="font-mono">A1 = "apuesta"</span>; desde <span class="font-mono">A2</span> en adelante, cada celda contiene una línea con: <em>Ganador, Odd, Tipo, Equipos</em>. Podemos detectar los campos con etiquetas (p. ej., <em>Ganador: X | Odd: 1.85 | Tipo: Ganador | Equipos: A vs B</em>) o heurísticas.</p>
+    <p class="mt-2 text-slate-600">Estructura: <strong>A1=Ganador</strong>, <strong>A2=Odd</strong>, <strong>A3=Tipo</strong>, <strong>A4=Partido</strong>. Mostramos solo: <em>Sport</em>, <em>Winner</em>, <em>factor</em>, <em>Home</em>, <em>Away</em>.</p>
 
     <section class="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
       <div class="lg:col-span-2 space-y-6">
@@ -40,6 +38,7 @@
           </div>
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label class="block text-sm font-medium mb-1">Hoja</label><select id="sheetSel" class="w-full rounded-xl border border-slate-200 p-2.5"></select></div>
+            <div><label class="block text-sm font-medium mb-1">Fila inicial</label><input id="startRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" /></div>
           </div>
           <div class="mt-3 flex items-center gap-2">
             <button id="parseBtn" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Leer</button>
@@ -48,11 +47,8 @@
         </div>
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
-          <h2 class="text-lg font-semibold mb-3">2) Construir & Validar</h2>
-          <label class="flex items-center gap-2 text-sm">
-            <input id="validateOn" type="checkbox" class="h-4 w-4" checked> Validar ganador ∈ {home, away} (o 'Empate' en Fútbol)
-          </label>
-          <button id="buildBtn" class="mt-3 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Construir líneas</button>
+          <h2 class="text-lg font-semibold mb-3">2) Construir</h2>
+          <button id="buildBtn" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">Construir</button>
           <div id="summary" class="mt-3 text-xs text-slate-500"></div>
         </div>
 
@@ -68,7 +64,7 @@
       <div class="lg:col-span-3 space-y-6">
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Previsualización (A)</h2>
+            <h2 class="text-lg font-semibold">Previsualización (Columna A)</h2>
             <div class="text-xs text-slate-500"><span id="previewCount">0</span> filas</div>
           </div>
           <div class="overflow-auto rounded-xl border border-slate-200">
@@ -78,7 +74,7 @@
 
         <div class="card bg-white rounded-2xl p-5 border border-slate-200">
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Líneas construidas</h2>
+            <h2 class="text-lg font-semibold">Líneas (simplificado)</h2>
             <div class="text-xs text-slate-500"><span id="builtCount">0</span> elementos</div>
           </div>
           <div class="overflow-auto rounded-xl border border-slate-200">
@@ -92,11 +88,11 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const state = { wb:null, fileName:null, lines:[], built:[], sheet:null };
+    const state = { wb:null, fileName:null, linesA:[], built:[], sheet:null };
 
     function setFileInfo(txt){ $("fileInfo").textContent = txt; }
     function clearAll(){
-      state.wb=null; state.fileName=null; state.lines=[]; state.built=[]; state.sheet=null;
+      state.wb=null; state.fileName=null; state.linesA=[]; state.built=[]; state.sheet=null;
       $("sheetSel").innerHTML = ""; setFileInfo("Sin archivo");
       renderPreview([]); renderBuilt([]); $("summary").textContent="";
     }
@@ -107,15 +103,11 @@
       e.currentTarget.classList.remove("bg-indigo-50","border-indigo-300");
     }
     function loadFile(file){
-      state.fileName=file.name;
-      setFileInfo("Archivo: "+file.name+" ("+Math.round(file.size/1024)+" KB)");
+      state.fileName=file.name; setFileInfo("Archivo: "+file.name+" ("+Math.round(file.size/1024)+" KB)");
       const reader=new FileReader();
       reader.onload = function(ev){
-        try{
-          const data=new Uint8Array(ev.target.result);
-          state.wb = XLSX.read(data, { type:'array' });
-          populateSheets();
-        }catch(err){ alert("No se pudo leer el archivo."); console.error(err); }
+        try{ const data=new Uint8Array(ev.target.result); state.wb = XLSX.read(data, { type:'array' }); populateSheets(); }
+        catch(err){ alert("No se pudo leer el archivo."); console.error(err); }
       };
       reader.readAsArrayBuffer(file);
     }
@@ -125,42 +117,34 @@
       sheets.forEach((s,i)=>{ const opt=document.createElement("option"); opt.value=s; opt.textContent=s+(i===0?" (sugerida)":""); sel.appendChild(opt); });
       state.sheet = sheets[0] || null;
     }
-    function renderPreview(lines){
+    function renderPreview(list){
       const table = $("previewTable"); table.innerHTML="";
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
-      ["Fila","apuesta"].forEach(h=>{ const th=document.createElement("th"); th.textContent=h; thr.appendChild(th); });
+      ["Fila","A"].forEach(h=>{ const th=document.createElement("th"); th.textContent=h; thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
       const tbody=document.createElement("tbody"); const MAX=200;
-      lines.slice(0,MAX).forEach((t,i)=>{
+      list.slice(0,MAX).forEach((v,i)=>{
         const tr=document.createElement("tr");
-        const td1=document.createElement("td"); td1.textContent=(i+2); tr.appendChild(td1);
-        const td2=document.createElement("td"); td2.textContent=(t ?? ""); tr.appendChild(td2);
+        const td1=document.createElement("td"); td1.textContent=i+1; tr.appendChild(td1);
+        const td2=document.createElement("td"); td2.textContent=v; tr.appendChild(td2);
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      $("previewCount").textContent = lines.length.toString();
+      $("previewCount").textContent = list.length.toString();
     }
     function parseSheet(){
       const sheetName = $("sheetSel").value || state.sheet;
       if(!sheetName){ alert("No hay hojas."); return; }
       const ws = state.wb.Sheets[sheetName];
-      // Leer toda la hoja como matriz
       const arr = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:"" });
-      if(!arr || !arr.length){ renderPreview([]); return; }
-      // Esperamos A1 = "apuesta"; desde A2 datos
-      const header = (arr[0] && arr[0][0] ? arr[0][0].toString().trim().toLowerCase() : "");
-      if(header !== "apuesta"){
-        // si no coincide, igual intentamos tomando la primera columna
-        console.warn("A1 no es 'apuesta', detectado:", header);
-      }
       const lines = [];
-      for(let i=1;i<arr.length;i++){
+      for(let i=0;i<arr.length;i++){
         const row = arr[i];
         const val = row && row.length ? String(row[0] ?? "").trim() : "";
-        if(val) lines.push(val);
+        lines.push(val);
       }
       state.sheet = sheetName;
-      state.lines = lines;
+      state.linesA = lines;
       renderPreview(lines);
     }
     function normalizeOdds(v){
@@ -174,76 +158,51 @@
       if(!raw) return {home:"",away:""};
       const s = raw.toString();
       const seps = [" vs ", " vs. ", " v ", " @ ", " - ", " — ", " – "];
-      for(const sep of seps){ if(s.includes(sep)){ const [a,b]=s.split(sep,1); return {home:(a||"").trim(), away:(b||"").trim()}; } }
+      for(const sep of seps){ if(s.includes(sep)){ const parts=s.split(sep); if(parts.length>=2){ return {home:(parts[0]||"").trim(), away:(parts[1]||"").trim()}; } } }
       const m = s.split(/\s+(?:vs\.?|v|@|\-+|—|–)\s+/i);
       if(m.length>=2) return {home:(m[0]||"").trim(), away:(m[1]||"").trim()};
       return {home:s.trim(), away:""};
     }
     function inferSport(typeStr){
-      const t=(typeStr||"").toString().toLowerCase();
+      const t=(typeStr||"").toString().trim().toLowerCase();
       if(t === "ganador") return "Tenis";
       if(t.includes("resultado del partido") || (t.includes("resultado") && t.includes("partido"))) return "Fútbol";
       return "";
     }
-    function extractLabeled(s, key){
-      const re = {
-        winner: /(ganador|winner|selecci[oó]n|pick)\s*[:=-]\s*([^|;,\n]+)/i,
-        odd: /(odd|odds|cuota|price|momio|decimal|american)\s*[:=-]\s*([+\-]?\d+(?:[.,]\d+)?)/i,
-        type: /(tipo|type|market|mercado|apuesta|resultado(?:\s+del)?\s+partido|ganador)\s*[:=-]\s*([^|;,\n]+)/i,
-        teams: /(equipos|match|game|partido)\s*[:=-]\s*([^|\n]+)/i
-      }[key];
-      const m = re ? s.match(re) : null;
-      if(!m) return "";
-      return (m[2] || m[3] || "").trim();
-    }
-    function fallbackOdd(s){
-      const m = s.match(/([+\-]?\d+(?:[.,]\d+)?)/);
-      return m ? m[1] : "";
-    }
     function buildLines(){
-      const validate = $("validateOn").checked;
-      const built = state.lines.map(line => {
-        const winnerL = extractLabeled(line, "winner");
-        const oddL = extractLabeled(line, "odd") || fallbackOdd(line);
-        const typeL = extractLabeled(line, "type");
-        const teamsL = extractLabeled(line, "teams");
-        const teamsStr = teamsL || line; // por si viene inline sin etiqueta
-        const teams = splitTeams(teamsStr);
-        const sport = inferSport(typeL);
-        const odd = normalizeOdds(oddL);
-        const winner = winnerL || ""; // si no hay etiqueta, no arriesgamos heurística
-        // Validación
-        let valid=true, note="OK";
-        const w = (winner||"").toString().trim().toLowerCase();
-        const h = (teams.home||"").toString().trim().toLowerCase();
-        const a = (teams.away||"").toString().trim().toLowerCase();
-        if(validate){
-          if(!w){ valid=false; note="Winner vacío"; }
-          else if(sport==="Fútbol"){
-            if(w!=="empate" && w!==h && w!==a){ valid=false; note="Winner no coincide con equipos"; }
-          } else if(sport==="Tenis"){
-            if(w!==h && w!==a){ valid=false; note="Winner no coincide con jugadores"; }
-          }
-        }
-        return { sport, winner, odd_type: odd?odd.type:"", odd_value: odd?odd.value:"", type: typeL, home: teams.home, away: teams.away, teamsRaw: teamsStr, valid, note };
-      });
+      const start = Math.max(1, parseInt($("startRow").value || "1", 10)); // 1-based
+      const startIdx = start - 1; // 0-based
+      const arr = state.linesA;
+      const built = [];
+      for(let i=startIdx; i < arr.length; i += 4){
+        const a1 = arr[i]     || ""; // Ganador
+        const a2 = arr[i+1]   || ""; // Odd
+        const a3 = arr[i+2]   || ""; // Tipo
+        const a4 = arr[i+3]   || ""; // Partido
+        if(!a1 && !a2 && !a3 && !a4) continue;
+        const odd = normalizeOdds(a2);
+        const sport = inferSport(a3);
+        const teams = splitTeams(a4);
+        built.push({
+          sport, winner: a1, factor: odd?odd.value:"", home: teams.home, away: teams.away
+        });
+      }
       state.built = built;
       renderBuilt(built);
-      const total=built.length, bad=built.filter(x=>!x.valid).length;
-      $("summary").textContent = `Construidas: ${total} • Inválidas: ${bad} • Válidas: ${total-bad}`;
+      $("summary").textContent = `Construidas: ${built.length}`;
     }
     function renderBuilt(items){
       const table = $("builtTable"); table.innerHTML="";
       $("builtCount").textContent = (items?items.length:0).toString();
       if(!items || !items.length) return;
-      const headers=["sport","winner","odd_type","odd_value","type","home","away","valid","note","teamsRaw"];
-      const pretty=["Deporte","Ganador","Odd(tipo)","Odd(valor)","Tipo","Home","Away","Válida","Nota","Equipos(raw)"];
+      const headers=["sport","winner","factor","home","away"];
+      const pretty =["Sport","Winner","factor","Home","Away"];
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
       pretty.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
       const tbody=document.createElement("tbody"); const MAX=500;
       items.slice(0,MAX).forEach(it=>{
-        const tr=document.createElement("tr"); tr.className = it.valid?"good":"bad";
+        const tr=document.createElement("tr");
         headers.forEach(k=>{ const td=document.createElement("td"); td.textContent=(it[k]??""); tr.appendChild(td); });
         tbody.appendChild(tr);
       });
@@ -251,15 +210,15 @@
     }
     function exportJSON(){
       const blob=new Blob([JSON.stringify(state.built,null,2)],{type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_from_colA.json"; a.click(); URL.revokeObjectURL(a.href);
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_simplified.json"; a.click(); URL.revokeObjectURL(a.href);
     }
     function exportCSV(){
       if(!state.built.length){ alert("No hay líneas."); return; }
-      const cols=["sport","winner","odd_type","odd_value","type","home","away","valid","note","teamsRaw"];
+      const cols=["sport","winner","factor","home","away"];
       const head=cols.join(",")+"\n";
       const rows=state.built.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n");
       const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_from_colA.csv"; a.click(); URL.revokeObjectURL(a.href);
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sportsbets_lines_simplified.csv"; a.click(); URL.revokeObjectURL(a.href);
     }
     // Events
     $("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); e.currentTarget.classList.add("bg-indigo-50","border-indigo-300"); });

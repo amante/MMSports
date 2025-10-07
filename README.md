@@ -1,3 +1,3 @@
-# MMSports — Project Site (v1.8)
+# MMSports — Project Site (v1.10)
 
-SportsBets ahora lee archivos donde **A1 = 'apuesta'** y desde **A2..N** cada celda contiene la línea completa. Se extraen Ganador, Odd, Tipo y Equipos con etiquetas o heurísticas, se infiere el deporte y se valida el ganador.
+SportsBets con vista simplificada (Sport, Winner, factor, Home, Away) y parsing por bloques de 4 en Columna A.
