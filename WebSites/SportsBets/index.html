@@ -29,7 +29,7 @@
       .card, .kpi { border-color:#ddd; }
     }
   
-    /* --- v1.24 UI polish --- */
+    /* --- v1.25 UI polish --- */
     table.ticket-table{ table-layout: fixed; }
     th, td{ font-size:13px }
     .num, .num-input{ text-align:right; font-variant-numeric: tabular-nums;
@@ -48,6 +48,7 @@
     th.col-umbral, td.col-umbral { width: 90px; }
     th.col-valor, td.col-valor { width: 110px; }
     th.col-tipo, td.col-tipo { width: 100px; }
+    th.col-faltan, td.col-faltan { width: 100px; }
     th.col-factor, td.col-factor { width: 110px; }
         th.col-res, td.col-res { width: 120px; }
     th.col-status, td.col-status { width: 90px; }
@@ -94,10 +95,13 @@
           <label class="block text-sm font-medium mb-1">Fila inicial</label>
           <input id="startRow" type="number" min="1" step="1" value="1" class="w-full rounded-xl border border-slate-200 p-2.5" />
         </div>
-        <div class="flex items-end gap-2">
+        <div class="flex items-end flex-wrap gap-2">
           <button id="parseBtn" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Leer</button>
           <button id="clearBtn" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Limpiar</button>
-        </div>
+          <button id="saveBtn" class="px-3 py-2 rounded-lg bg-emerald-700 text-white text-sm hover:bg-emerald-600">Guardar</button>
+  <button id="restoreBtn" class="px-3 py-2 rounded-lg bg-slate-700 text-white text-sm hover:bg-slate-600">Restaurar</button>
+  <button id="clearSavedBtn" class="px-3 py-2 rounded-lg bg-slate-200 text-slate-800 text-sm hover:bg-slate-300">Borrar guardadas</button>
+</div>
       </div>
     </div>
   </div>
@@ -133,7 +137,47 @@
       if(cur.length){ out.push(cur); }
       return out;
     }
-function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'mixta'; }
+
+    // ---- v1.25: persistence + delta 'faltan' helpers ----
+    const STORAGE_KEY = 'mmsports_sportsbets_booklets_v1';
+    function saveBooklets(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({booklets: state.booklets})); alert('Cartillas guardadas.'); }catch(e){ console.error(e); alert('No se pudo guardar.'); } }
+    function loadBooklets(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw){ alert('No hay cartillas guardadas.'); return; } const o = JSON.parse(raw); if(!o || !o.booklets || !o.booklets.length){ alert('Guardado vacío.'); return; } state.booklets = o.booklets; state.activeBooklet = 0; renderTabs(); setFileInfo('Restaurado desde guardado local'); }catch(e){ console.error(e); alert('No se pudo restaurar.'); } }
+    function clearSaved(){ try{ localStorage.removeItem(STORAGE_KEY); alert('Guardado eliminado.'); }catch(e){ console.error(e); } }
+    function formatDelta(d){ if(!Number.isFinite(d)) return ''; return Math.abs(d - Math.round(d)) < 1e-9 ? String(Math.round(d)) : d.toFixed(2); }
+    function computeDelta(it){
+      const toNum = (val)=>{ const s=(val??'').toString().trim().replace(',', '.'); const n = Number(s); return Number.isFinite(n) ? n : NaN; };
+      const u = toNum(it.umbral);
+      const v = toNum(it.valor);
+      if(!Number.isFinite(u) || !Number.isFinite(v)) return '';
+      const tipo = (it.tipo||'over').toString().toLowerCase();
+      if(tipo === 'under'){
+        // cuántas yardas "sobran" para quedar por debajo o 0 si ya está por debajo
+        return formatDelta(v < u ? 0 : (v - u));
+      }else{
+        // over: cuántas faltan para superar el umbral o 0 si ya supera
+        return formatDelta(v > u ? 0 : (u - v));
+      }
+    }
+    function setResultTextStyle(span, it){
+      if(!span) return;
+      const cls = classifyResult(it.resultado);
+      span.classList.remove('text-emerald-700','font-semibold','text-red-700');
+      if(cls === 'ganado'){ span.classList.add('text-emerald-700','font-semibold'); }
+      else if(cls === 'perdido'){ span.classList.add('text-red-700','font-semibold'); }
+    }
+    function refreshDeltaForRow(bi, key, idx){
+      const table = document.getElementById(kIdB(bi,key,'table'));
+      const row = table?.querySelectorAll('tbody tr')[idx];
+      if(!row) return;
+      // column order: sport(0), winner(1), stat(2), umbral(3), valor(4), tipo(5), faltan(6), factor(7), resultado(8), status(9), actions(10)
+      const tdF = row.children[6];
+      const t = state.booklets[bi]?.ticket;
+      const it = t?.lines[idx];
+      if(!tdF || !it) return;
+      tdF.textContent = computeDelta(it);
+    }
+
+    function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'mixta'; }
     function setFileInfo(txt){ $("fileInfo").textContent = txt; }
     function clearAll(){
       state.wb=null; state.fileName=null; state.linesA=[]; state.built=[]; state.sheet=null; state.tickets={}; state.active=null;
@@ -428,10 +472,10 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
       }
 
       const table = wrap.querySelector("#"+kIdB(bi,key,"table"));
-      const headers=["sport","winner","stat","umbral","valor","tipo","factor","resultado","_status","_actions"];
-      const pretty =["Sport","Winner","stat","umbral","valor","tipo","factor*","Resultado","Estado","Acciones"];
+      const headers=["sport","winner","stat","umbral","valor","tipo","faltan","factor","resultado","_status","_actions"];
+      const pretty =["Sport","Winner","stat","umbral","valor","tipo","faltan","factor*","Resultado","Estado","Acciones"];
       const thead=document.createElement("thead"); const thr=document.createElement("tr");
-      pretty.forEach((c,ci)=>{ const th=document.createElement("th"); th.textContent=c; if(ci===7) th.classList.add("col-res"); if(ci===8) th.classList.add("col-status"); thr.appendChild(th); });
+      pretty.forEach((c,ci)=>{ const th=document.createElement("th"); th.textContent=c; if(ci===8) th.classList.add("col-res"); if(ci===9) th.classList.add("col-status"); thr.appendChild(th); });
       thead.appendChild(thr); table.appendChild(thead);
       const tbody=document.createElement("tbody");
       t.lines.forEach((it, idx)=>{
@@ -445,11 +489,11 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
 
         const inpVal=document.createElement("input"); inpVal.type="text"; inpVal.placeholder="valor"; inpVal.className="num-input rounded-lg border border-slate-200";
         inpVal.value = (it.valor ?? ""); inpVal.addEventListener("input",(e)=>{ const nv = e.target.value; it.valor = nv === "" ? "" : Number(nv); autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdVal.appendChild(inpVal); tr.appendChild(tdVal);
-        const tdTipo=document.createElement("td"); tdTipo.className="col-tipo"; const sel=document.createElement("select"); sel.className="rounded-lg border border-slate-200 px-2 py-1.5"; ["over","under"].forEach(opt=>{ const o=document.createElement("option"); o.value=opt; o.textContent=opt.toUpperCase(); sel.appendChild(o); }); sel.value = (it.tipo && ["over","under"].includes(String(it.tipo).toLowerCase())) ? String(it.tipo).toLowerCase() : "over"; sel.addEventListener("change", ()=>{ it.tipo = sel.value; autoEvalResult(it); updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdTipo.appendChild(sel); tr.appendChild(tdTipo);
+        const tdTipo=document.createElement("td"); tdTipo.className="col-tipo"; const sel=document.createElement("select"); sel.className="rounded-lg border border-slate-200 px-2 py-1.5"; ["over","under"].forEach(opt=>{ const o=document.createElement("option"); o.value=opt; o.textContent=opt.toUpperCase(); sel.appendChild(o); }); sel.value = (it.tipo && ["over","under"].includes(String(it.tipo).toLowerCase())) ? String(it.tipo).toLowerCase() : "over"; sel.addEventListener("change", ()=>{ it.tipo = sel.value; autoEvalResult(it); updateRowStatusB(bi, key, idx); refreshDeltaForRow(bi, key, idx); computeEffectiveForB(bi, key); }); tdTipo.appendChild(sel); tr.appendChild(tdTipo);
         const tdFactor=document.createElement("td"); tdFactor.className="col-factor"; const inpF=document.createElement("input"); inpF.type="text"; inpF.placeholder="1.85 o +120"; inpF.className="num-input factor rounded-lg border border-slate-200"; inpF.value = (it.factor ?? ""); inpF.addEventListener("input",(e)=>{ const nv=e.target.value; const norm=normalizeOdds(nv); it.factor = norm ? norm.value : nv; computeTotalsForB(bi, key); computeEffectiveForB(bi, key); }); tdFactor.appendChild(inpF); tr.appendChild(tdFactor);
         
         const tdRes = document.createElement("td"); tdRes.className="col-res col-resultado";
-        if(it.umbral!=null && it.umbral!==""){ const span = document.createElement("span"); span.textContent = it.resultado || ""; tdRes.appendChild(span); }
+        if(it.umbral!=null && it.umbral!==""){ const span = document.createElement("span"); span.textContent = it.resultado || ""; setResultTextStyle(span, it); tdRes.appendChild(span); }
         else { const inp = document.createElement("input"); inp.type="text"; inp.placeholder="Ganado/Perdido"; inp.className="w-full rounded-lg border border-slate-200 p-1.5"; inp.value = it.resultado || ""; inp.addEventListener("input", (e)=>{ it.resultado = e.target.value; updateRowStatusB(bi, key, idx); computeEffectiveForB(bi, key); }); tdRes.appendChild(inp); }
         tr.appendChild(tdRes);
         const tdStatus=document.createElement("td"); tdStatus.className="col-status col-estado"; tdStatus.dataset.idx=idx; tr.appendChild(tdStatus);
@@ -479,7 +523,7 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
       document.getElementById(kIdB(bi,key,"recalcBtn")).addEventListener("click", ()=>{ computeTotalsForB(bi, key); computeEffectiveForB(bi, key); });
       document.getElementById(kIdB(bi,key,"clearResultsBtn")).addEventListener("click", ()=>{ state.booklets[bi].ticket.lines.forEach(it=>{ it.valor=""; it.resultado=""; }); renderTabs(); });
       document.getElementById(kIdB(bi,key,"exportJSON")).addEventListener("click", ()=>{ const t=state.booklets[bi].ticket; const blob=new Blob([JSON.stringify(t.lines,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`cartilla_${bi+1}_${key}_lines.json`; a.click(); URL.revokeObjectURL(a.href); });
-      document.getElementById(kIdB(bi,key,"exportCSV")).addEventListener("click", ()=>{ const t=state.booklets[bi].ticket; const cols=["sport","winner","stat","umbral","valor","tipo","factor","resultado"]; const head=cols.join(",")+"\n"; const rows=t.lines.map(it=>cols.map(k=>('"'+String(it[k]??"").replace(/"/g,'""')+'"')).join(",")).join("\n"); const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`cartilla_${bi+1}_${key}_lines.csv`; a.click(); URL.revokeObjectURL(a.href); });
+      document.getElementById(kIdB(bi,key,"exportCSV")).addEventListener("click", ()=>{ const t=state.booklets[bi].ticket; const cols=["sport","winner","stat","umbral","valor","tipo","faltan","factor","resultado"]; const head=cols.join(",")+"\n"; const rows=t.lines.map(it=>cols.map(k=>{ const v = (k==="faltan") ? computeDelta(it) : (it[k]??""); return (\"\"+String(v).replace(/\\"/g,'\\"')+\"\"); }).join(",")).join("\n"); const blob=new Blob([head+rows],{type:"text/csv;charset=utf-8;"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`cartilla_${bi+1}_${key}_lines.csv`; a.click(); URL.revokeObjectURL(a.href); });
       applyHideCols();
       computeTotalsForB(bi, key); computeEffectiveForB(bi, key);
     }// Global events
@@ -490,6 +534,9 @@ function slug(s){ return (s||'mixta').toString().toLowerCase().normalize('NFD').
     document.getElementById("parseBtn").addEventListener("click", parseSheet);
     document.getElementById("clearBtn").addEventListener("click", clearAll);
     document.getElementById("hideResultsChk").addEventListener("change", applyHideCols);
+    document.getElementById("saveBtn").addEventListener("click", saveBooklets);
+    document.getElementById("restoreBtn").addEventListener("click", loadBooklets);
+    document.getElementById("clearSavedBtn").addEventListener("click", clearSaved);
   </script>
 <script src="../../assets/site.js"></script>
   <script>window.Site && window.Site.auto();</script>
