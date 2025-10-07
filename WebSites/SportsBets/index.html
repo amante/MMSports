@@ -29,7 +29,7 @@
       .card, .kpi { border-color:#ddd; }
     }
   
-    /* --- v1.25 UI polish --- */
+    /* --- v1.25.1 UI polish --- */
     table.ticket-table{ table-layout: fixed; }
     th, td{ font-size:13px }
     .num, .num-input{ text-align:right; font-variant-numeric: tabular-nums;
@@ -138,7 +138,7 @@
       return out;
     }
 
-    // ---- v1.25: persistence + delta 'faltan' helpers ----
+    // ---- v1.25.1: persistence + delta 'faltan' helpers ----
     const STORAGE_KEY = 'mmsports_sportsbets_booklets_v1';
     function saveBooklets(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({booklets: state.booklets})); alert('Cartillas guardadas.'); }catch(e){ console.error(e); alert('No se pudo guardar.'); } }
     function loadBooklets(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw){ alert('No hay cartillas guardadas.'); return; } const o = JSON.parse(raw); if(!o || !o.booklets || !o.booklets.length){ alert('Guardado vacío.'); return; } state.booklets = o.booklets; state.activeBooklet = 0; renderTabs(); setFileInfo('Restaurado desde guardado local'); }catch(e){ console.error(e); alert('No se pudo restaurar.'); } }
@@ -538,11 +538,6 @@
     document.getElementById("restoreBtn").addEventListener("click", loadBooklets);
     document.getElementById("clearSavedBtn").addEventListener("click", clearSaved);
   </script>
-<script src="../../assets/site.js"></script>
-  <script>window.Site && window.Site.auto();</script>
-</body>
-</html>
-</script>
 <script src="../../assets/site.js"></script>
   <script>window.Site && window.Site.auto();</script>
 </body>
