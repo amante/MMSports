@@ -1,4 +1,4 @@
-/* MMSports v1.4.0 - Enhanced Carousel */
+/* MMSports v1.4.0-merged - Enhanced Carousel merged into v1-2-full */
 const STATE_KEYS = { players:'mmsports_players', cartillas:'mmsports_cartillas' };
 let players = [];
 let cartillas = [];
@@ -192,7 +192,10 @@ function updateCarouselTransform(){
 }
 
 function updateCarouselControls(){
-  // dots
+  // toolbar elements exist? ensure create if missing
+  if(!$('#dots')){
+    const dots=document.createElement('div'); dots.id='dots'; $('#carouselWrap')?.appendChild(dots);
+  }
   const dotsEl=$('#dots'); dotsEl.innerHTML='';
   cartillas.forEach((c,i)=>{
     const b=document.createElement('button');
@@ -201,18 +204,15 @@ function updateCarouselControls(){
     b.addEventListener('click',()=>{ currentSlide=i; updateCarouselTransform(); adjustWrapHeight(); syncGotoSel(); });
     dotsEl.appendChild(b);
   });
-  // gotoSel
   const sel=$('#gotoSel'); if(sel){
     sel.innerHTML='<option value="">—</option>' + cartillas.map((c,i)=>`<option value="${i}" ${i===currentSlide?'selected':''}>${i+1}. ${c.nombre}</option>`).join('');
   }
-  // playPause label
   const pp=$('#playPause'); if(pp) pp.textContent = autoEnabled ? 'Pausar' : 'Reproducir';
 }
 
 function syncGotoSel(){
   const sel=$('#gotoSel');
   if(sel && sel.value !== String(currentSlide)) sel.value=String(currentSlide);
-  // dots active
   $$('#dots .dot').forEach((d,i)=>{ d.classList.toggle('active', i===currentSlide); });
 }
 
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 
   // Export/Import/Clear
-  $('#btnExport').addEventListener('click', ()=>{ const payload={players,cartillas,version:'1.4.0',exportedAt:new Date().toISOString()}; downloadJSON('mmsports_estado.json', payload); });
+  $('#btnExport').addEventListener('click', ()=>{ const payload={players,cartillas,version:'1.4.0-merged',exportedAt:new Date().toISOString()}; downloadJSON('mmsports_estado.json', payload); });
   $('#btnImport').addEventListener('click', async ()=>{
     const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json';
     inp.onchange=async()=>{ const f=inp.files?.[0]; if(!f) return; const txt=await f.text(); try{ const data=JSON.parse(txt); players=data.players??[]; cartillas=data.cartillas??[]; saveState(); renderAll(); if(autoEnabled) startAuto(); } catch{ alert('JSON inválido'); } };

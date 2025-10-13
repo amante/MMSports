@@ -1,14 +1,20 @@
-# MMSports v1.4.0 — Carrusel Mejorado
+# MMSports — Project Site (v1.2)
 
-Novedades del carrusel:
-- Botones **Prev/Next** y estado **X de N**.
-- **Autoplay** con **Play/Pause** y selector de **velocidad** (3s/6s/10s).
-- **Paginación por puntos** (clicables).
-- **Selector “Ir a”** para saltar directo a cualquier cartilla.
-- **Navegación por teclado** (← →, Espacio, Home/End).
-- **Gestos swipe** en móvil (arrastrar izquierda/derecha).
-- Ajuste automático de **altura** del contenedor al contenido del slide.
+Repositorio listo para **GitHub Pages (Project Site)** con despliegue vía **GitHub Actions**.
 
-Se mantiene todo lo de v1.3 (carga Excel/CSV, tabla de jugadores con propagación, restante/cumple, persistencia local, export/import, confetti).
+## Estructura
+- `index.html` — portada.
+- `WebSites/` — landing y subapps:
+  - `WebSites/TennisSimulator/` (v2 completa)
+  - `WebSites/NFLSimulator/` (placeholder; usa `tools/` para integrar tu versión real)
+- `assets/site.js` y `assets/site.css` — navbar y footer globales.
+- `.github/workflows/pages.yml` — workflow recomendado (incluye `configure-pages`).
+- `.nojekyll`
+- `tools/` — scripts para integrar NFLSimulator desde repo o carpeta local.
 
-**Uso:** Carga tus archivos, luego usa la barra del carrusel para recorrer, reproducir, ajustar velocidad o saltar directo a una cartilla específica.
+## Publicación
+1) Crea el repo **MMSports** en GitHub.
+2) Sube estos archivos en la **raíz** del repo (rama `main`).
+3) En **Settings → Pages**, selecciona **Source = GitHub Actions**.
+4) Verás la URL final en el job **Deploy to GitHub Pages** (debe ser: `https://amante.github.io/MMSports/`).
+
