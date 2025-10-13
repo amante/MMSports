@@ -5,10 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Websites — Índice</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .card { transition: transform .15s ease, box-shadow .15s ease; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgb(0 0 0 / .06);}
-  </style>
+  
+<style>
+  .card{transition:transform .15s ease, box-shadow .15s ease;}
+  .card:hover{transform:translateY(-2px); box-shadow:0 8px 24px rgb(0 0 0 / .06);}
+  .nav a.is-active{color:rgb(2,132,199); font-weight:600;}
+  .crumbs a{color:rgb(71,85,105);}
+  .crumbs a:hover{text-decoration:underline;}
+  .crumbs .sep{color:rgb(148,163,184)}
+  .footer-nav a{color:rgb(71,85,105);}
+  .footer-nav a:hover{text-decoration:underline;}
+</style>
+
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800">
   <header class="border-b bg-white/80 backdrop-blur">
@@ -20,36 +28,33 @@
           <p class="text-xs text-slate-500 -mt-1">Índice unificado • Build 2025-10-13</p>
         </div>
       </div>
-      <nav class="text-sm text-slate-600 hidden sm:block">
-        <a href="Websites/NFLSimulator/" class="hover:underline mr-4">NFLSimulator</a>
-        <a href="Websites/TennisSimulator/" class="hover:underline mr-4">TennisSimulator</a>
-        <a href="Websites/Bets/" class="hover:underline">Bets</a>
-      </nav>
+      
+    <nav class="nav text-sm text-slate-600 flex gap-4">
+      <a class="is-active" href="./index.html">Inicio</a>
+      <a href="./Websites/NFLSimulator/index.html">NFLSimulator</a>
+      <a href="./Websites/TennisSimulator/index.html">TennisSimulator</a>
+      <a href="./Websites/Bets/index.html">Bets</a>
+    </nav>
+    
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 py-10">
-    <section class="mb-8">
-      <div class="rounded-2xl bg-gradient-to-r from-sky-50 to-emerald-50 border border-slate-200 p-6">
-        <h2 class="text-lg font-semibold mb-1">Bienvenido</h2>
-        <p class="text-slate-600 text-sm">Accede a los proyectos alojados en <code>/Websites</code>. Todos comparten estilo base y componentes de UI.</p>
-      </div>
-    </section>
-
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      <a href="Websites/NFLSimulator/" class="card group block rounded-2xl border bg-white p-5">
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="crumbs text-sm flex items-center gap-2 text-slate-500"><span class="text-slate-800 font-medium">Inicio</span></div>
+    <section class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <a href="./Websites/NFLSimulator/index.html" class="card group block rounded-2xl border bg-white p-5">
         <div class="w-10 h-10 rounded-full bg-indigo-500/10 grid place-items-center mb-3">🏈</div>
         <div class="font-semibold">NFLSimulator</div>
         <div class="text-sm text-slate-600">Simulador NFL</div>
         <div class="mt-3 text-xs text-indigo-600 group-hover:underline">Abrir →</div>
       </a>
-      <a href="Websites/TennisSimulator/" class="card group block rounded-2xl border bg-white p-5">
+      <a href="./Websites/TennisSimulator/index.html" class="card group block rounded-2xl border bg-white p-5">
         <div class="w-10 h-10 rounded-full bg-emerald-500/10 grid place-items-center mb-3">🎾</div>
         <div class="font-semibold">TennisSimulator</div>
         <div class="text-sm text-slate-600">Simulador de tenis</div>
         <div class="mt-3 text-xs text-emerald-600 group-hover:underline">Abrir →</div>
       </a>
-      <a href="Websites/Bets/" class="card group block rounded-2xl border bg-white p-5">
+      <a href="./Websites/Bets/index.html" class="card group block rounded-2xl border bg-white p-5">
         <div class="w-10 h-10 rounded-full bg-sky-500/10 grid place-items-center mb-3">💸</div>
         <div class="font-semibold">Bets</div>
         <div class="text-sm text-slate-600">Gestor de apuestas estilo MMSports</div>
@@ -57,7 +62,19 @@
       </a>
     </section>
   </main>
+  
+  <footer class="border-t border-slate-200 py-8 text-center text-xs text-slate-500">
+    <div class="footer-nav mb-2 flex items-center justify-center gap-4 text-[13px]">
+      <a href="./index.html">Inicio</a>
+      <span>•</span>
+      <a href="./Websites/NFLSimulator/index.html">NFLSimulator</a>
+      <span>•</span>
+      <a href="./Websites/TennisSimulator/index.html">TennisSimulator</a>
+      <span>•</span>
+      <a href="./Websites/Bets/index.html">Bets</a>
+    </div>
+    <div>© 2025 Websites — UI unificada</div>
+  </footer>
 
-  <footer class="py-8 text-center text-xs text-slate-500">© 2025 Websites</footer>
 </body>
 </html>

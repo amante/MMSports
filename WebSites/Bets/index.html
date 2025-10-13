@@ -3,19 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bets — Bets-1.0.0 (MMSports-style)</title>
+  <title>Bets — MMSports-style</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     .confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
     .confetti span { position:absolute; top:-10px; font-size:18px; animation: fall 3s linear forwards; }
-    @keyframes fall {
-      0% { transform: translateY(-10px) rotate(0deg); opacity:1; }
-      100% { transform: translateY(110vh) rotate(360deg); opacity:0.2; }
-    }
+    @keyframes fall { 0% { transform: translateY(-10px) rotate(0deg); opacity:1; } 100% { transform: translateY(110vh) rotate(360deg); opacity:0.2; } }
     .card { break-inside: avoid; }
     .dot { width:10px; height:10px; border-radius:9999px; border:1px solid rgb(203,213,225); }
     .dot.active { background: rgb(59,130,246); border-color: rgb(59,130,246); }
+    .nav a.is-active{color:rgb(2,132,199);font-weight:600}
     @media print {
       body { background:white; }
       #topbar, #controls, #playerSearch, #toast, #warnPanel, #footerActions { display:none !important; }
@@ -32,54 +30,28 @@
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-full bg-sky-600 text-white grid place-items-center font-bold">B</div>
         <div>
-          <h1 class="text-xl font-semibold">Bets <span class="text-xs align-top text-slate-500">Bets-1.0.0 (MMSports-style)</span></h1>
+          <h1 class="text-xl font-semibold">Bets <span class="text-xs align-top text-slate-500">MMSports-style</span></h1>
           <p class="text-xs text-slate-500 -mt-1">Cartillas desde Excel/CSV • Carrusel • Tabla de jugadores • Validaciones • Impresión en columnas</p>
         </div>
       </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 cursor-pointer">
-          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" class="hidden">
-          <span class="w-5 h-5">📤</span>
-          <span class="text-sm">Cargar Excel/CSV</span>
-        </label>
-
-        <button id="btnExport" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Exportar estado</button>
-        <button id="btnImport" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Importar estado</button>
-        <button id="btnClear" class="px-3 py-2 border border-rose-200 text-rose-700 rounded-xl bg-rose-50 hover:bg-rose-100 text-sm">Borrar estado</button>
-        <a href="samples/Cartillas.csv" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm" download>Plantilla Cartillas.csv</a>
-        <a href="samples/Jugadores.csv" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm" download>Plantilla Jugadores.csv</a>
-        <div class="flex items-center gap-2 border border-slate-300 rounded-xl px-2 py-1 bg-white">
-          <label class="text-xs text-slate-600">Imprimir columnas</label>
-          <select id="printCols" class="text-xs border border-slate-200 rounded-lg px-2 py-1">
-            <option value="0">Auto</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </select>
-        </div>
-        <button onclick="window.print()" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Imprimir</button>
-        <a class="text-xs text-slate-600 hover:underline" href="../../index.html">← Volver al índice</a>
-      </div>
+      
+    <nav class="nav text-sm text-slate-600 flex flex-wrap gap-4">
+      <a class="" href="../../index.html">Inicio</a>
+      <a class="" href="../NFLSimulator/index.html">NFLSimulator</a>
+      <a class="" href="../TennisSimulator/index.html">TennisSimulator</a>
+      <a class="is-active" href="../Bets/index.html">Bets</a>
+    </nav>
+    
     </div>
   </header>
 
-  <!-- Toast & Warnings -->
-  <div id="toast" class="fixed top-3 right-3 max-w-sm hidden"></div>
-  <div id="warnPanel" class="hidden fixed inset-0 z-30">
-    <div class="absolute inset-0 bg-black/30" onclick="document.getElementById('warnPanel').classList.add('hidden')"></div>
-    <div class="relative z-40 max-w-xl mx-auto mt-24 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="font-semibold">Validaciones de carga</h3>
-        <button class="px-2 py-1 rounded-lg border" onclick="document.getElementById('warnPanel').classList.add('hidden')">Cerrar</button>
-      </div>
-      <ul id="warnList" class="list-disc list-inside text-sm text-slate-700"></ul>
-    </div>
-  </div>
-
   <main id="printArea" class="max-w-7xl mx-auto px-4 pb-20">
-    <section id="dropzone" class="mt-6 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-white text-center text-slate-500">
+    <div class="py-4">
+      <div class="crumbs text-sm flex items-center gap-2 text-slate-500"><a href="../../index.html">Inicio</a> <span class="sep">/</span> <span class="text-slate-800 font-medium">Bets</span></div>
+    </div>
+
+    <section id="dropzone" class="mt-2 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-white text-center text-slate-500">
       Arrastra aquí tu archivo <strong>.xlsx</strong> / <strong>.csv</strong> con <em>Cartillas</em> y opcionalmente <em>Jugadores</em>.
-      <div class="text-xs mt-2">Hojas/Headers esperados — Cartillas: Cartilla, Jugador, Estadistica, Condicion (>= o &lt;=), Objetivo, Actual (opcional). Jugadores: Jugador, Estadistica, Valor.</div>
     </section>
 
     <section id="controls" class="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -91,7 +63,6 @@
           </div>
         </div>
 
-        <!-- Carousel Toolbar -->
         <div class="flex flex-wrap items-center gap-2 mb-3">
           <button id="prevBtn" class="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">◀</button>
           <button id="nextBtn" class="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">▶</button>
@@ -145,14 +116,23 @@
     </section>
 
     <section id="footerActions" class="mt-10 text-xs text-slate-500">
-      Build 2025-10-13 — Bets-1.0.0 (MMSports-style)
+      Build 2025-10-13 — Bets MMSports-style
     </section>
   </main>
 
   <div id="confetti" class="confetti"></div>
-
-  <footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-    © 2025 Bets (MMSports-style). Persistencia local. Sin servidor.
+  
+  <footer class="border-t border-slate-200 py-8 text-center text-xs text-slate-500">
+    <div class="footer-nav mb-2 flex items-center justify-center gap-4 text-[13px]">
+      <a href="../../index.html">Inicio</a>
+      <span>•</span>
+      <a href="../../Websites/NFLSimulator/index.html">NFLSimulator</a>
+      <span>•</span>
+      <a href="../../Websites/TennisSimulator/index.html">TennisSimulator</a>
+      <span>•</span>
+      <a href="../../Websites/Bets/index.html">Bets</a>
+    </div>
+    <div>© 2025 Websites — UI unificada</div>
   </footer>
 
   <script src="./app.js"></script>
