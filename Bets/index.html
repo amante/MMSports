@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bets — Bets-1.0.0 (MMSports-style)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    .confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+    .confetti span { position:absolute; top:-10px; font-size:18px; animation: fall 3s linear forwards; }
+    @keyframes fall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity:1; }
+      100% { transform: translateY(110vh) rotate(360deg); opacity:0.2; }
+    }
+    .card { break-inside: avoid; }
+    .dot { width:10px; height:10px; border-radius:9999px; border:1px solid rgb(203,213,225); }
+    .dot.active { background: rgb(59,130,246); border-color: rgb(59,130,246); }
+    @media print {
+      body { background:white; }
+      #topbar, #controls, #playerSearch, #toast, #warnPanel, #footerActions { display:none !important; }
+      .print-cols-2 #printArea { column-count: 2; column-gap: 24px; }
+      .print-cols-3 #printArea { column-count: 3; column-gap: 18px; }
+      .card { page-break-inside: avoid; break-inside: avoid; }
+      table { width: 100%; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header id="topbar" class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-sky-600 text-white grid place-items-center font-bold">B</div>
+        <div>
+          <h1 class="text-xl font-semibold">Bets <span class="text-xs align-top text-slate-500">Bets-1.0.0 (MMSports-style)</span></h1>
+          <p class="text-xs text-slate-500 -mt-1">Cartillas desde Excel/CSV • Carrusel • Tabla de jugadores • Validaciones • Impresión en columnas</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 cursor-pointer">
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" class="hidden">
+          <span class="w-5 h-5">📤</span>
+          <span class="text-sm">Cargar Excel/CSV</span>
+        </label>
+
+        <button id="btnExport" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Exportar estado</button>
+        <button id="btnImport" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Importar estado</button>
+        <button id="btnClear" class="px-3 py-2 border border-rose-200 text-rose-700 rounded-xl bg-rose-50 hover:bg-rose-100 text-sm">Borrar estado</button>
+        <a href="samples/Cartillas.csv" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm" download>Plantilla Cartillas.csv</a>
+        <a href="samples/Jugadores.csv" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm" download>Plantilla Jugadores.csv</a>
+        <div class="flex items-center gap-2 border border-slate-300 rounded-xl px-2 py-1 bg-white">
+          <label class="text-xs text-slate-600">Imprimir columnas</label>
+          <select id="printCols" class="text-xs border border-slate-200 rounded-lg px-2 py-1">
+            <option value="0">Auto</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+        <button onclick="window.print()" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Imprimir</button>
+        <a class="text-xs text-slate-600 hover:underline" href="../../index.html">← Volver al índice</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast & Warnings -->
+  <div id="toast" class="fixed top-3 right-3 max-w-sm hidden"></div>
+  <div id="warnPanel" class="hidden fixed inset-0 z-30">
+    <div class="absolute inset-0 bg-black/30" onclick="document.getElementById('warnPanel').classList.add('hidden')"></div>
+    <div class="relative z-40 max-w-xl mx-auto mt-24 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-semibold">Validaciones de carga</h3>
+        <button class="px-2 py-1 rounded-lg border" onclick="document.getElementById('warnPanel').classList.add('hidden')">Cerrar</button>
+      </div>
+      <ul id="warnList" class="list-disc list-inside text-sm text-slate-700"></ul>
+    </div>
+  </div>
+
+  <main id="printArea" class="max-w-7xl mx-auto px-4 pb-20">
+    <section id="dropzone" class="mt-6 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-white text-center text-slate-500">
+      Arrastra aquí tu archivo <strong>.xlsx</strong> / <strong>.csv</strong> con <em>Cartillas</em> y opcionalmente <em>Jugadores</em>.
+      <div class="text-xs mt-2">Hojas/Headers esperados — Cartillas: Cartilla, Jugador, Estadistica, Condicion (>= o &lt;=), Objetivo, Actual (opcional). Jugadores: Jugador, Estadistica, Valor.</div>
+    </section>
+
+    <section id="controls" class="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div class="lg:col-span-3">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-semibold">Carrusel de cartillas</h2>
+          <div class="flex items-center gap-2 text-xs text-slate-600">
+            <span id="carouselStatus" aria-live="polite">Sin cartillas</span>
+          </div>
+        </div>
+
+        <!-- Carousel Toolbar -->
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <button id="prevBtn" class="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">◀</button>
+          <button id="nextBtn" class="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">▶</button>
+
+          <button id="playPause" class="px-3 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">Reproducir</button>
+          <label class="text-xs flex items-center gap-1">
+            Velocidad:
+            <select id="speedSel" class="border border-slate-300 rounded-lg px-2 py-1 text-xs">
+              <option value="3000">3s</option>
+              <option value="6000" selected>6s</option>
+              <option value="10000">10s</option>
+            </select>
+          </label>
+
+          <label class="text-xs flex items-center gap-1 ml-auto">
+            Ir a:
+            <select id="gotoSel" class="border border-slate-300 rounded-lg px-2 py-1 text-xs">
+              <option value="">—</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="carouselWrap" class="relative bg-white border border-slate-200 rounded-2xl p-4 overflow-hidden">
+          <div id="carousel" class="flex transition-transform duration-500 ease-out will-change-transform"></div>
+          <div class="mt-3 flex items-center justify-center gap-2" id="dots"></div>
+        </div>
+        <p class="mt-2 text-xs text-slate-500">Consejos: usa ← → para navegar, <kbd>Espacio</kbd> para Play/Pause, <kbd>Home</kbd>/<kbd>End</kbd> para ir al inicio/fin. Swipe en móvil.</p>
+      </div>
+
+      <div class="lg:col-span-1">
+        <h2 class="text-lg font-semibold mb-3">Jugadores</h2>
+        <input id="playerSearch" class="w-full mb-3 px-3 py-2 border border-slate-300 rounded-xl" placeholder="Buscar jugador..." />
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="text-left px-3 py-2">Jugador</th>
+                <th class="text-left px-3 py-2">Estadística</th>
+                <th class="text-right px-3 py-2">Valor</th>
+              </tr>
+            </thead>
+            <tbody id="playersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-lg font-semibold mb-3">Resumen</h2>
+      <div id="summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+    </section>
+
+    <section id="footerActions" class="mt-10 text-xs text-slate-500">
+      Build 2025-10-13 — Bets-1.0.0 (MMSports-style)
+    </section>
+  </main>
+
+  <div id="confetti" class="confetti"></div>
+
+  <footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+    © 2025 Bets (MMSports-style). Persistencia local. Sin servidor.
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
