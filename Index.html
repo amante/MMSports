@@ -1,14 +1,140 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MMSports — Proyectos</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-slate-50 text-slate-900">
-<div id="site-navbar"></div>
-<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">MMSports — Proyectos</h1>
-  <ul class="mt-4 list-disc pl-6">
-    <li><a class="text-indigo-700 underline" href="./WebSites/SportsBets/">SportsBets</a></li>
-  </ul>
-</main>
-<div id="site-footer"></div>
-<script src="./assets/site.js"></script><script>window.Site && window.Site.auto();</script>
-</body></html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MMSports v1.3.0 — Cartillas & Jugadores</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230ea5e9'/%3E%3Ctext x='50' y='58' font-size='48' text-anchor='middle' fill='white' font-family='Arial'%3EM%3C/text%3E%3C/svg%3E"/>
+  <style>
+    .confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+    .confetti span { position:absolute; top:-10px; font-size:18px; animation: fall 3s linear forwards; }
+    @keyframes fall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity:1; }
+      100% { transform: translateY(110vh) rotate(360deg); opacity:0.2; }
+    }
+
+    /* Layout helpers */
+    .card { break-inside: avoid; }
+
+    /* Print styles */
+    @media print {
+      body { background: white; }
+      #topbar, #controls, #playerSearch, #toast, #warnPanel, #footerActions { display:none !important; }
+      .print-cols-2 #printArea { column-count: 2; column-gap: 24px; }
+      .print-cols-3 #printArea { column-count: 3; column-gap: 18px; }
+      .card { page-break-inside: avoid; break-inside: avoid; }
+      table { width: 100%; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header id="topbar" class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-sky-500 text-white grid place-items-center font-bold">M</div>
+        <div>
+          <h1 class="text-xl font-semibold">MMSports <span class="text-xs align-top text-slate-500">v1.3.0</span></h1>
+          <p class="text-xs text-slate-500 -mt-1">Cartillas desde Excel/CSV • Carrusel • Tabla de jugadores con actualización y propagación • Persistencia local • Validaciones • Modo impresión en columnas</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 cursor-pointer">
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" class="hidden">
+          <span class="w-5 h-5">📤</span>
+          <span class="text-sm">Cargar Excel/CSV</span>
+        </label>
+
+        <button id="btnExport" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Exportar estado</button>
+        <button id="btnImport" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Importar estado</button>
+        <button id="btnClear" class="px-3 py-2 border border-rose-200 text-rose-700 rounded-xl bg-rose-50 hover:bg-rose-100 text-sm">Borrar estado</button>
+        <a href="samples/Cartillas.csv" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm" download>Plantilla Cartillas.csv</a>
+        <a href="samples/Jugadores.csv" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm" download>Plantilla Jugadores.csv</a>
+        <div class="flex items-center gap-2 border border-slate-300 rounded-xl px-2 py-1 bg-white">
+          <label class="text-xs text-slate-600">Imprimir columnas</label>
+          <select id="printCols" class="text-xs border border-slate-200 rounded-lg px-2 py-1">
+            <option value="0">Auto</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+        <button onclick="window.print()" class="px-3 py-2 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-sm">Imprimir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Warning / Toast Panels -->
+  <div id="toast" class="fixed top-3 right-3 max-w-sm hidden"></div>
+  <div id="warnPanel" class="hidden fixed inset-0 z-30">
+    <div class="absolute inset-0 bg-black/30" onclick="document.getElementById('warnPanel').classList.add('hidden')"></div>
+    <div class="relative z-40 max-w-xl mx-auto mt-24 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-semibold">Validaciones de carga</h3>
+        <button class="px-2 py-1 rounded-lg border" onclick="document.getElementById('warnPanel').classList.add('hidden')">Cerrar</button>
+      </div>
+      <ul id="warnList" class="list-disc list-inside text-sm text-slate-700"></ul>
+    </div>
+  </div>
+
+  <main id="printArea" class="max-w-7xl mx-auto px-4 pb-20">
+    <section id="dropzone" class="mt-6 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-white text-center text-slate-500">
+      Arrastra aquí tu archivo <strong>.xlsx</strong> / <strong>.csv</strong> con <em>Cartillas</em> y opcionalmente <em>Jugadores</em>.
+      <div class="text-xs mt-2">Hojas/Headers esperados — Cartillas: Cartilla, Jugador, Estadistica, Condicion (>= o &lt;=), Objetivo, Actual (opcional). Jugadores: Jugador, Estadistica, Valor.</div>
+    </section>
+
+    <section id="controls" class="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div class="lg:col-span-3">
+        <h2 class="text-lg font-semibold mb-3 flex items-center justify-between">
+          Carrusel de cartillas
+          <span id="carouselStatus" class="text-xs text-slate-500"></span>
+        </h2>
+        <div class="relative bg-white border border-slate-200 rounded-2xl p-4 overflow-hidden">
+          <div id="carousel" class="flex transition-transform duration-500 ease-out"></div>
+          <div class="absolute inset-y-0 left-0 flex items-center">
+            <button id="prevBtn" class="m-2 px-2 py-1 rounded-lg bg-white/80 border border-slate-200 hover:bg-white">◀</button>
+          </div>
+          <div class="absolute inset-y-0 right-0 flex items-center">
+            <button id="nextBtn" class="m-2 px-2 py-1 rounded-lg bg-white/80 border border-slate-200 hover:bg-white">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-1">
+        <h2 class="text-lg font-semibold mb-3">Jugadores</h2>
+        <input id="playerSearch" class="w-full mb-3 px-3 py-2 border border-slate-300 rounded-xl" placeholder="Buscar jugador..." />
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="text-left px-3 py-2">Jugador</th>
+                <th class="text-left px-3 py-2">Estadística</th>
+                <th class="text-right px-3 py-2">Valor</th>
+              </tr>
+            </thead>
+            <tbody id="playersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-lg font-semibold mb-3">Resumen</h2>
+      <div id="summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+    </section>
+
+    <section id="footerActions" class="mt-10 text-xs text-slate-500">
+      Build 2025-10-13 — MMSports v1.3.0
+    </section>
+  </main>
+
+  <div id="confetti" class="confetti"></div>
+
+  <footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+    © 2025 MMSports. Persistencia local. Sin servidor.
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
