@@ -1,35 +1,14 @@
-# MMSports v1.3.0
+# MMSports v1.4.0 — Carrusel Mejorado
 
-**Fix pack v1.3.0** sobre la base v1-2-full:
+Novedades del carrusel:
+- Botones **Prev/Next** y estado **X de N**.
+- **Autoplay** con **Play/Pause** y selector de **velocidad** (3s/6s/10s).
+- **Paginación por puntos** (clicables).
+- **Selector “Ir a”** para saltar directo a cualquier cartilla.
+- **Navegación por teclado** (← →, Espacio, Home/End).
+- **Gestos swipe** en móvil (arrastrar izquierda/derecha).
+- Ajuste automático de **altura** del contenedor al contenido del slide.
 
-- ✅ IDs críticos presentes: `fileInput`, `dropzone`, `carousel`, `playersTable`, `summary`, `prevBtn`, `nextBtn`, `playerSearch`.
-- ✅ Inclusión por CDN: Tailwind + SheetJS/XLSX.
-- ✅ **Validaciones** de headers y tipos con panel de advertencias.
-- ✅ **Cálculo de restante** y **estado (cumple)** con coloreado.
-- ✅ **Propagación** de cambios desde Jugadores hacia Cartillas.
-- ✅ **Persistencia local** (LocalStorage `mmsports_*`) + Export/Import JSON.
-- ✅ **Modo impresión en columnas** (Auto / 2 / 3).
-- ✅ **Animación de victoria** (confetti) cuando todas las cartillas se cumplen.
-- ✅ **Manejo de CSV** robusto (comillas, campos con comas).
-- ✅ **Workflow GitHub Pages** `.github/workflows/pages.yml` incluido.
+Se mantiene todo lo de v1.3 (carga Excel/CSV, tabla de jugadores con propagación, restante/cumple, persistencia local, export/import, confetti).
 
-## Estructura de datos esperada
-
-### Cartillas
-- `Cartilla`, `Jugador`, `Estadistica`, `Condicion` (`>=` o `<=`), `Objetivo`, `Actual?`
-
-### Jugadores
-- `Jugador`, `Estadistica`, `Valor`
-
-> Coincidencia por (`Jugador`, `Estadistica`) case-insensitive.
-
-## Uso
-1. Abrir `index.html` o publicar en GitHub Pages.
-2. Cargar `.xlsx` con hojas **Cartillas**/**Jugadores** o `.csv` conforme a plantillas.
-3. Editar valores de jugadores y observar propagación.
-4. Exportar/Importar estado desde los botones del topbar.
-5. Elegir columnas para impresión desde el selector (Auto/2/3) y usar **Imprimir**.
-
-## Notas
-- Build 2025-10-13.
-- Este paquete sobrescribe/estandariza la UI; si tenías estilos/IDs distintos, ajusta referencias en tu código si hace falta.
+**Uso:** Carga tus archivos, luego usa la barra del carrusel para recorrer, reproducir, ajustar velocidad o saltar directo a una cartilla específica.
