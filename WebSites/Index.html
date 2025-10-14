@@ -1,11 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=../index.html">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Redireccionando…</title>
-  <script>window.location.replace("../index.html");</script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MMSports — WebSites</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Landing interna de /WebSites en el repositorio MMSports." />
 </head>
-<body><p>Redireccionando a <a href="../index.html">../index.html</a>…</p></body>
+<body class="bg-slate-50 text-slate-900">
+  <div id="site-navbar"></div>
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">MMSports — WebSites</h1>
+    <p class="mt-2 text-slate-600">Proyectos publicados dentro de <span class="font-medium">/WebSites</span>.</p>
+
+    <section class="mt-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <a href="./TennisSimulator/" class="block rounded-2xl p-5 bg-white border border-slate-200">
+          <div class="text-3xl mb-2">🎾</div>
+          <div class="font-semibold">TennisSimulator (v2)</div>
+          <p class="text-sm text-slate-600 mt-1">Logístico + Monte Carlo por sets, odds e IC95%.</p>
+        </a>
+        <a href="./NFLSimulator/" class="block rounded-2xl p-5 bg-white border border-slate-200">
+          <div class="text-3xl mb-2">🏈</div>
+          <div class="font-semibold">NFLSimulator</div>
+          <p class="text-sm text-slate-600 mt-1">Integrado desde repo/local.</p>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="../assets/site.js"></script>
+  <script>window.Site && window.Site.auto();</script>
+</body>
 </html>
